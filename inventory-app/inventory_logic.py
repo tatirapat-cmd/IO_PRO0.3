@@ -34,36 +34,7 @@ def load_data(file_path: str = None) -> Dict[str, Any]:
             {"username": "staff", "password": "123", "role": "staff", "name": "เจ้าหน้าที่คลัง"},
             {"username": "customer", "password": "123", "role": "customer", "name": "ลูกค้าทั่วไป"}
         ],
-        "products": [
-            {
-                "sku": "SKU-1001",
-                "name": "โน้ตบุ๊กประมวลผลสูง",
-                "company": "บริษัท เทคโซลูชัน จำกัด",
-                "category": "Electronics",
-                "unit": "เครื่อง",
-                "cost_price": 22000.0,
-                "selling_price": 28900.0,
-                "quantity": 15,
-                "min_stock": 5,
-                "supplier": "บริษัท เทคโซลูชัน จำกัด",
-                "warehouse": "คลังสินค้า A",
-                "expiry_date": "2028-12-31"
-            },
-            {
-                "sku": "SKU-1002",
-                "name": "เมาส์ไร้สาย Ergonomic",
-                "company": "บริษัท ไอทีดิสทริบิวชัน จำกัด",
-                "category": "Electronics",
-                "unit": "อัน",
-                "cost_price": 450.0,
-                "selling_price": 890.0,
-                "quantity": 3,
-                "min_stock": 10,
-                "supplier": "บริษัท ไอทีดิสทริบิวชัน จำกัด",
-                "warehouse": "คลังสินค้า A",
-                "expiry_date": "2029-06-30"
-            }
-        ],
+        "products": [],
         "stock_cards": [],
         "audit_logs": [],
         "purchase_orders": [],
