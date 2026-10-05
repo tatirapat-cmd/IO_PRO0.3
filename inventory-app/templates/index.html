@@ -506,7 +506,7 @@
     <script>
         let currentUser = { username: "admin", role: "admin", name: "ผู้ดูแลระบบ" };
         let currentPage = 1;
-        let perPage = 20; // กำหนดค่าเริ่มต้นแสดงผล 20 รายการต่อหน้า
+        let perPage = 20; // ค่าเริ่มต้น 20 รายการต่อหน้า
         let categoryChart = null, companyChart = null, productChart = null;
 
         const loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
@@ -531,6 +531,11 @@
             perPage = parseInt(select.value);
             currentPage = 1;
             loadProducts();
+        }
+
+        // ฟังก์ชันสั่ง Export ไฟล์ Excel
+        function exportExcel() {
+            window.location.href = '/api/export/excel';
         }
 
         async function loadCategories() {
