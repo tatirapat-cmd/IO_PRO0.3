@@ -188,7 +188,7 @@ def validate_product_input(sku: str, name: str, cost_str: Any, price_str: Any, q
         return False, f"ตรวจสอบข้อมูลไม่ผ่าน: {str(e)}", {}
 
 def generate_unique_id(items: List[Dict[str, Any]], prefix: str = "ORD") -> str:
-    """6. สร้าง ID แบบไม่ซ้ำ โดยใช้ while loop"""
+    """6. สร้าง ID แบบไม่ซ้ำ"""
     existing_ids = {i.get("id", i.get("order_id", i.get("po_id"))) for i in items if isinstance(i, dict)}
     counter = len(items) + 1
     new_id = f"{prefix}-{counter:03d}"
@@ -580,7 +580,6 @@ def export_products_to_excel(products: List[Dict[str, Any]]) -> io.BytesIO:
     return output
 
 def clean_number(val, default=0.0):
-    """20. ทำความสะอาดตัวเลขราคาทุน/ขาย/จำนวนจาก Excel"""
     if pd.isna(val) or val is None or str(val).strip() == '':
         return default
     try:
@@ -590,7 +589,7 @@ def clean_number(val, default=0.0):
         return default
 
 def import_products_from_excel(file_stream, existing_products: List[Dict[str, Any]]) -> Tuple[bool, str, int]:
-    """21. นำเข้าข้อมูลสินค้าจากไฟล์ Excel"""
+    """20. นำเข้าข้อมูลสินค้าจากไฟล์ Excel ฝั่ง Python"""
     try:
         df = pd.read_excel(file_stream)
         clean_cols = [str(c).strip().lower().replace(" ", "_").replace("(", "").replace(")", "").replace("/", "_") for c in df.columns]
@@ -631,20 +630,27 @@ def import_products_from_excel(file_stream, existing_products: List[Dict[str, An
                     actual_cols['selling_price'] = col
                     break
 
-        if 'sku' not in actual_cols or 'name' not in actual_cols:
-            return False, "ไฟล์ Excel ต้องมีคอลัมน์ 'SKU' และ 'Name'", 0
+        if 'sku' not in actual_cols and 'name' not in actual_cols:
+            return False, "ไฟล์ Excel ต้องมีคอลัมน์ 'SKU' หรือ 'ชื่อสินค้า'", 0
 
         imported_count = 0
         existing_skus = {p["sku"]: p for p in existing_products if isinstance(p, dict)}
 
         for index, row in df.iterrows():
-            sku_val = row.get(actual_cols['sku'], "")
+            sku_col = actual_cols.get('sku')
+            name_col = actual_cols.get('name')
+
+            sku_val = row.get(sku_col, "") if sku_col else ""
             sku = str(sku_val).strip().upper() if pd.notna(sku_val) else ""
+
+            name_val = row.get(name_col, "") if name_col else ""
+            name = str(name_val).strip() if pd.notna(name_val) else ""
+
+            if not sku and name:
+                sku = f"SKU-{index+1001}"
+
             if not sku or sku in ["NAN", "NONE"]:
                 continue
-
-            name_val = row.get(actual_cols['name'], "")
-            name = str(name_val).strip() if pd.notna(name_val) else ""
 
             comp_col = actual_cols.get('company')
             company = str(row[comp_col]).strip() if comp_col and pd.notna(row[comp_col]) else "-"
@@ -678,7 +684,7 @@ def import_products_from_excel(file_stream, existing_products: List[Dict[str, An
 
             prod_data = {
                 "sku": sku,
-                "name": name,
+                "name": name or sku,
                 "company": company,
                 "category": category,
                 "unit": unit,
