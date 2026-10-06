@@ -11,17 +11,21 @@ ALLOWED_ROLES: Set[str] = {"admin", "staff", "customer"}
 PRIMARY_FILE_PATH: str = os.path.join("data", "stock_data.json")
 TMP_FILE_PATH: str = os.path.join("/tmp", "stock_data.json")
 
-# รูปแบบสัญลักษณ์ต้องห้ามและรูปแบบตัวอักษรเข้มงวด
+
 INVALID_SYMBOLS_PATTERN = re.compile(r'[<>"\'\\;{}[\]$%^*~+=|]')
 STRICT_CODE_PATTERN = re.compile(r'^[a-zA-Z0-9_\-]+$')
 
 def validate_text_field(val: Any, field_name: str, strict_code: bool = False) -> Tuple[bool, str]:
-    """ฟังก์ชันกลางสำหรับดักจับข้อความและสัญลักษณ์ผิดปกติ"""
+    """ฟังก์ชันกลางสำหรับดักจับข้อความ สัญลักษณ์ผิดปกติ และความยาวเกิน 10 ตัวอักษร"""
     if val is None or not str(val).strip():
         return False, f"กรุณากรอก {field_name}"
         
     val_str = str(val).strip()
     
+    # ดักจับความยาวเกิน 10 ตัวอักษร
+    if len(val_str) > 10:
+        return False, f"{field_name} ต้องมีความยาวไม่เกิน 10 ตัวอักษร (ปัจจุบันยาว {len(val_str)} ตัวอักษร)"
+
     if INVALID_SYMBOLS_PATTERN.search(val_str):
         return False, f"{field_name} มีสัญลักษณ์ที่ไม่ได้รับอนุญาต (ห้ามใช้ < > \" ' \\ ; {{ }} [ ] $ % ^ * ~ + = |)"
         
