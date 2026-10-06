@@ -122,9 +122,9 @@
                     </div>
                     <div class="col-md-4 d-flex gap-1">
                         <button class="btn btn-outline-secondary" onclick="resetFilters()" title="รีเซ็ต"><i class="fa-solid fa-rotate"></i></button>
+                        <button class="btn btn-outline-danger admin-staff-only" onclick="clearAllFileData()" title="ลบข้อมูลไฟล์ทั้งหมด"><i class="fa-solid fa-trash-arrow-up me-1"></i> ลบไฟล์ข้อมูล</button>
                         <button class="btn btn-danger admin-staff-only" onclick="deleteSelectedProducts()" title="ลบสินค้าที่เลือก"><i class="fa-solid fa-trash-can me-1"></i> ลบที่เลือก</button>
-                        <button class="btn btn-outline-danger" onclick="clearAllFileData()" title="ลบข้อมูลไฟล์ทั้งหมด"><i class="fa-solid fa-trash-arrow-up me-1"></i> ลบไฟล์ข้อมูล
-                        <button class="btn btn-info text-white" onclick="openImportModal()"><i class="fa-solid fa-file-import me-1"></i> เพิ่มไฟล์ Excel
+                        <button class="btn btn-info text-white admin-staff-only w-100" onclick="openImportModal()"><i class="fa-solid fa-file-import me-1"></i> Import</button>
                         <button class="btn btn-success admin-staff-only w-100" onclick="exportExcel()"><i class="fa-solid fa-file-excel me-1"></i> Export</button>
                         <button class="btn btn-primary admin-staff-only w-100" onclick="openProductModal()"><i class="fa-solid fa-plus me-1"></i> เพิ่ม</button>
                     </div>
@@ -406,7 +406,7 @@
                 <div class="modal-body">
                     <form id="importForm">
                         <div class="mb-3">
-                            <label class="form-label">เลือกไฟล์ (.xlsx)</label>
+                            <label class="form-label">เลือกไฟล์ (.xlsx, .xls)</label>
                             <input type="file" id="excelFile" class="form-control" accept=".xlsx, .xls" required>
                         </div>
                         <button type="button" class="btn btn-info text-white w-100 fw-bold" onclick="handleFileUpload()">นำเข้าไฟล์เข้าระบบ</button>
@@ -832,25 +832,103 @@
             }
         });
 
-        document.getElementById('importForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
+        function handleFileUpload() {
             const fileInput = document.getElementById('excelFile');
-            if (!fileInput.files[0]) return;
+            if (!fileInput.files || !fileInput.files[0]) return alert('กรุณาเลือกไฟล์ Excel');
 
-            const formData = new FormData();
-            formData.append('file', fileInput.files[0]);
-            formData.append('client_db', JSON.stringify(getDb()));
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.SheetNames[0];
+                    const rows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet], { defval: "" });
 
-            const res = await fetch('/api/import/excel', { method: 'POST', body: formData });
-            const data = await res.json();
-            alert(data.message);
-            if (data.success) {
-                if (data.db_data) saveDb(data.db_data);
-                importModal.hide();
-                document.getElementById('importForm').reset();
+                    if (!rows || rows.length === 0) {
+                        return alert('ไม่พบข้อมูลในไฟล์ Excel หรือไฟล์ว่างเปล่า');
+                    }
+
+                    const db = getDb();
+                    let addedCount = 0;
+
+                    rows.forEach((r, index) => {
+                        const findVal = (keywords) => {
+                            const keys = Object.keys(r);
+                            for (let k of keys) {
+                                const cleanKey = k.toString().trim().toLowerCase().replace(/[\_\-\s]/g, '');
+                                for (let kw of keywords) {
+                                    if (cleanKey.includes(kw.toLowerCase())) {
+                                        return r[k];
+                                    }
+                                }
+                            }
+                            return "";
+                        };
+
+                        let sku = String(findVal(['sku', 'รหัส', 'code', 'id', 'item']) || '').trim().toUpperCase();
+                        let name = String(findVal(['name', 'ชื่อ', 'รายการ', 'title', 'product']) || '').trim();
+
+                        if (!sku && name) {
+                            sku = 'SKU-' + (index + 1001);
+                        }
+
+                        if (!sku) return;
+
+                        const company = String(findVal(['company', 'บริษัท', 'ซัพพลายเออร์', 'brand', 'supplier', 'ผู้ผลิต']) || '-').trim() || '-';
+                        const category = String(findVal(['category', 'หมวดหมู่', 'หมวด', 'cat', 'group']) || 'ทั่วไป').trim() || 'ทั่วไป';
+                        const unit = String(findVal(['unit', 'หน่วย']) || 'ชิ้น').trim() || 'ชิ้น';
+                        const quantity = Number(findVal(['quantity', 'qty', 'จำนวน', 'สต็อก', 'stock', 'คงเหลือ']) || 0) || 0;
+                        const min_stock = Number(findVal(['min', 'ขั้นต่ำ', 'จุดสั่งซื้อ']) || 5) || 5;
+                        const cost_price = Number(findVal(['cost', 'ต้นทุน', 'ราคาทุน']) || 0) || 0;
+                        const selling_price = Number(findVal(['price', 'ราคาขาย', 'ราคา', 'sell']) || 0) || 0;
+
+                        const product = {
+                            sku: sku,
+                            name: name || sku,
+                            company: company,
+                            category: category,
+                            unit: unit,
+                            quantity: quantity,
+                            min_stock: min_stock,
+                            cost_price: cost_price,
+                            selling_price: selling_price
+                        };
+
+                        const idx = db.products.findIndex(p => p.sku === sku);
+                        if (idx !== -1) db.products[idx] = product;
+                        else db.products.push(product);
+                        addedCount++;
+                    });
+
+                    saveDb(db);
+                    importModal.hide();
+                    fileInput.value = '';
+                    
+                    if (addedCount > 0) {
+                        alert(`นำเข้าไฟล์สำเร็จ ${addedCount} รายการ!`);
+                        await loadCategories(); 
+                        await loadProducts(); 
+                        await loadSummary();
+                    } else {
+                        alert('ไม่พบข้อมูลสินค้าที่นำเข้าได้ กรุณาตรวจสอบหัวคอลัมน์ในไฟล์ Excel');
+                    }
+                } catch (err) {
+                    console.error(err);
+                    alert('เกิดข้อผิดพลาดในการอ่านไฟล์ Excel: ' + err.message);
+                }
+            };
+            reader.readAsArrayBuffer(fileInput.files[0]);
+        }
+
+        function clearAllFileData() {
+            if (confirm('คุณต้องการลบข้อมูลไฟล์และสินค้าทั้งหมดในคลังใช่หรือไม่?')) {
+                const db = getDb();
+                db.products = [];
+                saveDb(db);
                 loadCategories(); loadProducts(); loadSummary();
+                alert('ลบข้อมูลไฟล์ทั้งหมดเรียบร้อยแล้ว');
             }
-        });
+        }
 
         function openRestockModal(sku, name) {
             document.getElementById('restockSku').value = sku;
@@ -1043,60 +1121,8 @@
             document.getElementById('categoryFilter').value = '';
             document.getElementById('sortBy').value = 'sku';
             currentPage = 1;
-            loadProducts();}
-        });
-        function handleFileUpload() {
-    const fileInput = document.getElementById('excelFile');
-    if (!fileInput.files[0]) return alert('กรุณาเลือกไฟล์ Excel');
-
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const firstSheet = workbook.SheetNames[0];
-        const rows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet]);
-
-        const db = getDb();
-        let addedCount = 0;
-
-        rows.forEach(r => {
-            const sku = String(r.sku || r.SKU || r['รหัสสินค้า'] || '').trim().toUpperCase();
-            if (!sku) return;
-
-            const product = {
-                sku: sku,
-                name: String(r.name || r.Name || r['ชื่อสินค้า'] || sku).trim(),
-                company: String(r.company || r['บริษัท'] || '-').trim(),
-                category: String(r.category || r['หมวดหมู่'] || 'ทั่วไป').trim(),
-                quantity: Number(r.quantity || r['จำนวน'] || 0),
-                cost_price: Number(r.cost_price || r['ราคาทุน'] || 0),
-                selling_price: Number(r.selling_price || r['ราคาขาย'] || 0)
-            };
-
-            const idx = db.products.findIndex(p => p.sku === sku);
-            if (idx !== -1) db.products[idx] = product;
-            else db.products.push(product);
-            addedCount++;
-        });
-
-        saveDb(db);
-        importModal.hide();
-        fileInput.value = '';
-        loadCategories(); loadProducts(); loadSummary();
-        alert(`เพิ่มไฟล์และนำเข้าสำเร็จ ${addedCount} รายการ!`);
-    };
-    reader.readAsArrayBuffer(fileInput.files[0]);
-}
-
-function clearAllFileData() {
-    if (confirm('คุณต้องการลบข้อมูลไฟล์และสินค้าทั้งหมดในคลังใช่หรือไม่?')) {
-        const db = getDb();
-        db.products = [];
-        saveDb(db);
-        loadCategories(); loadProducts(); loadSummary();
-        alert('ลบข้อมูลไฟล์ทั้งหมดเรียบร้อยแล้ว');
-    }
-}
+            loadProducts();
+        }
     </script>
 </body>
 </html>
