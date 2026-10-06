@@ -26,6 +26,7 @@
                 <span class="text-light small" id="userInfoDisplay"><i class="fa-solid fa-user me-1"></i> Guest</span>
                 <button class="btn btn-outline-light btn-sm ms-2" onclick="openLoginModal()"><i class="fa-solid fa-right-to-bracket me-1"></i> เข้าสู่ระบบ</button>
                 <button class="btn btn-warning btn-sm" onclick="openRegisterModal()"><i class="fa-solid fa-user-plus me-1"></i> สมัครสมาชิก</button>
+                <button class="btn btn-outline-danger btn-sm" onclick="logout()"><i class="fa-solid fa-right-from-bracket me-1"></i> ออกจากระบบ</button>
             </div>
         </div>
     </nav>
@@ -80,7 +81,7 @@
                 </div>
                 <div class="col-md-4">
                     <div class="card border-0 shadow-sm p-3 h-100">
-                        <h6 class="fw-bold mb-3 text-center"><i class="fa-solid fa-boxes-stacked me-2 text-success"></i>สัดส่วนตามชื่อรายการสินค้า</h6>
+                        <h6 class="fw-bold mb-3 text-center"><i class="fa-solid fa-boxes-stacked me-2 text-success"></i>สัดส่วนตามรายการสินค้า</h6>
                         <div class="chart-container d-flex justify-content-center align-items-center">
                             <canvas id="productPieChart"></canvas>
                         </div>
@@ -506,7 +507,7 @@
     <script>
         let currentUser = { username: "admin", role: "admin", name: "ผู้ดูแลระบบ" };
         let currentPage = 1;
-        let perPage = 20; // ค่าเริ่มต้น 20 รายการต่อหน้า
+        let perPage = 20;
         let categoryChart = null, companyChart = null, productChart = null;
 
         const loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
@@ -517,6 +518,30 @@
         const orderModal = new bootstrap.Modal(document.getElementById('orderModal'));
         const poModal = new bootstrap.Modal(document.getElementById('poModal'));
         const importModal = new bootstrap.Modal(document.getElementById('importModal'));
+
+        function getDb() {
+            const raw = localStorage.getItem('app_db_state');
+            if (raw) {
+                try { return JSON.parse(raw); } catch (e) {}
+            }
+            return { users: [], products: [], stock_cards: [], audit_logs: [], purchase_orders: [], supplier_pos: [] };
+        }
+
+        function saveDb(db) {
+            if (db) localStorage.setItem('app_db_state', JSON.stringify(db));
+        }
+
+        async function apiCall(endpoint, payload = {}) {
+            payload.client_db = getDb();
+            const res = await fetch(endpoint, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (data.db_data) saveDb(data.db_data);
+            return data;
+        }
 
         document.addEventListener('DOMContentLoaded', () => {
             updateRoleUI();
@@ -533,15 +558,9 @@
             loadProducts();
         }
 
-        // ฟังก์ชันสั่ง Export ไฟล์ Excel
-        function exportExcel() {
-            window.location.href = '/api/export/excel';
-        }
-
         async function loadCategories() {
             try {
-                const res = await fetch('/api/categories');
-                const data = await res.json();
+                const data = await apiCall('/api/categories');
                 if (data.success) {
                     const select = document.getElementById('categoryFilter');
                     const currentVal = select.value;
@@ -552,14 +571,11 @@
                     select.innerHTML = html;
                     select.value = currentVal;
                 }
-            } catch (err) {
-                console.error('ไม่สามารถโหลดหมวดหมู่ได้:', err);
-            }
+            } catch (err) { console.error(err); }
         }
 
         function updateRoleUI() {
             document.getElementById('userInfoDisplay').innerHTML = `<i class="fa-solid fa-user me-1"></i> ${currentUser.name} (${currentUser.role})`;
-
             const sensitiveElements = document.querySelectorAll('.sensitive-info');
             const adminStaffElements = document.querySelectorAll('.admin-staff-only');
 
@@ -578,31 +594,52 @@
         function openRegisterModal() { registerModal.show(); }
         function openImportModal() { importModal.show(); }
 
+        function logout() {
+            currentUser = { username: "guest", role: "customer", name: "Guest" };
+            updateRoleUI();
+            loadProducts();
+            loadOrders();
+            alert("ออกจากระบบเรียบร้อยแล้ว");
+        }
+
+        async function exportExcel() {
+            try {
+                const db = getDb();
+                const res = await fetch('/api/export/excel', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ client_db: db })
+                });
+                if (!res.ok) { alert('เกิดข้อผิดพลาดในการส่งออกไฟล์'); return; }
+                const blob = await res.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'inventory_report.xlsx';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+            } catch (err) { alert('เกิดข้อผิดพลาดในการส่งออกไฟล์ Excel'); }
+        }
+
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const username = document.getElementById('loginUser').value;
             const password = document.getElementById('loginPass').value;
 
             try {
-                const res = await fetch('/api/login', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ username, password })
-                });
-                const data = await res.json();
-
+                const data = await apiCall('/api/login', { username, password });
                 if (data.success) {
                     currentUser = data.user;
                     updateRoleUI();
                     loginModal.hide();
+                    document.getElementById('loginForm').reset();
                     loadSummary();
                     loadCategories();
                     loadProducts();
                     loadOrders();
-                } else {
-                    alert(data.message);
-                }
-            } catch (err) { alert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์'); }
+                } else alert(data.message);
+            } catch (err) { alert('เกิดข้อผิดพลาดในการเชื่อมต่อ'); }
         });
 
         document.getElementById('registerForm').addEventListener('submit', async (e) => {
@@ -615,12 +652,7 @@
             };
 
             try {
-                const res = await fetch('/api/register', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(payload)
-                });
-                const data = await res.json();
+                const data = await apiCall('/api/register', payload);
                 alert(data.message);
                 if (data.success) {
                     registerModal.hide();
@@ -632,14 +664,12 @@
         async function loadSummary() {
             if (currentUser.role === 'customer') return;
             try {
-                const res = await fetch('/api/summary');
-                const data = await res.json();
+                const data = await apiCall('/api/summary');
                 if (data.success) {
                     document.getElementById('statTotalItems').innerText = data.data.total_sku;
                     document.getElementById('statLowStock').innerText = data.data.low_stock_count;
                     document.getElementById('statTotalCost').innerText = `฿${data.data.total_cost_value.toLocaleString()}`;
                     document.getElementById('statTotalValue').innerText = `฿${data.data.total_sell_value.toLocaleString()}`;
-                    
                     renderDashboardCharts(data.data);
                 }
             } catch (err) { console.error(err); }
@@ -651,152 +681,94 @@
             const sortBy = document.getElementById('sortBy').value;
 
             try {
-                const res = await fetch(`/api/products?search=${encodeURIComponent(search)}&category=${encodeURIComponent(category)}&sort_by=${sortBy}&page=${currentPage}&per_page=${perPage}`);
-                const data = await res.json();
-
+                const data = await apiCall('/api/products', { search, category, sort_by: sortBy, page: currentPage, per_page: perPage });
                 if (data.success) {
                     const tbody = document.getElementById('productTableBody');
                     tbody.innerHTML = data.products.map(p => `
                         <tr>
-                            <td class="text-center">
-                                ${currentUser.role !== 'customer' ? `<input type="checkbox" class="product-checkbox" value="${p.sku}">` : ''}
-                            </td>
+                            <td class="text-center">${currentUser.role !== 'customer' ? `<input type="checkbox" class="product-checkbox" value="${p.sku}">` : ''}</td>
                             <td><code>${p.sku}</code></td>
                             <td class="fw-bold">${p.name}</td>
                             <td>${p.company || '-'}</td>
                             <td><span class="badge bg-light text-dark border">${p.category}</span></td>
-                            <td class="text-center">
-                                <span class="badge ${p.quantity <= (p.min_stock || 5) ? 'bg-danger' : 'bg-success'}">${p.quantity} ${p.unit || 'ชิ้น'}</span>
-                            </td>
+                            <td class="text-center"><span class="badge ${p.quantity <= (p.min_stock || 5) ? 'bg-danger' : 'bg-success'}">${p.quantity} ${p.unit || 'ชิ้น'}</span></td>
                             <td class="sensitive-info text-end text-muted">฿${p.cost_price.toLocaleString()}</td>
                             <td class="text-end fw-bold text-primary">฿${p.selling_price.toLocaleString()}</td>
                             <td class="text-center">
                                 ${currentUser.role !== 'customer' ? `
-                                    <button class="btn btn-sm btn-outline-primary me-1" onclick="openEditProductModal('${p.sku}')" title="แก้ไขสินค้า"><i class="fa-solid fa-pen"></i></button>
-                                    <button class="btn btn-sm btn-outline-success me-1" onclick="openRestockModal('${p.sku}', '${p.name.replace(/'/g, "\\'")}')" title="ปรับสต๊อก"><i class="fa-solid fa-plus"></i></button>
-                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteProduct('${p.sku}')" title="ลบสินค้า"><i class="fa-solid fa-trash"></i></button>
-                                ` : `
-                                    <button class="btn btn-sm btn-success" onclick="quickOrder('${p.sku}')"><i class="fa-solid fa-cart-plus me-1"></i>สั่งซื้อ</button>
-                                `}
+                                    <button class="btn btn-sm btn-outline-primary me-1" onclick="openEditProductModal('${p.sku}')"><i class="fa-solid fa-pen"></i></button>
+                                    <button class="btn btn-sm btn-outline-success me-1" onclick="openRestockModal('${p.sku}', '${p.name.replace(/'/g, "\\'")}')"><i class="fa-solid fa-plus"></i></button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteProduct('${p.sku}')"><i class="fa-solid fa-trash"></i></button>
+                                ` : `<button class="btn btn-sm btn-success" onclick="quickOrder('${p.sku}')"><i class="fa-solid fa-cart-plus me-1"></i>สั่งซื้อ</button>`}
                             </td>
                         </tr>
                     `).join('');
-
                     renderPagination(data.pagination);
                 }
             } catch (err) { console.error(err); }
         }
 
         function toggleSelectAll(source) {
-            const checkboxes = document.querySelectorAll('.product-checkbox');
-            checkboxes.forEach(cb => cb.checked = source.checked);
+            document.querySelectorAll('.product-checkbox').forEach(cb => cb.checked = source.checked);
         }
 
         async function deleteSelectedProducts() {
             const checkboxes = document.querySelectorAll('.product-checkbox:checked');
             const skus = Array.from(checkboxes).map(cb => cb.value);
-
-            if (skus.length === 0) {
-                alert('กรุณาเลือกสินค้าที่ต้องการลบอย่างน้อย 1 รายการ');
-                return;
-            }
-
-            if (!confirm(`คุณต้องการยืนยันการลบสินค้าที่เลือกจำนวน ${skus.length} รายการใช่หรือไม่?`)) {
-                return;
-            }
+            if (skus.length === 0) return alert('กรุณาเลือกสินค้าอย่างน้อย 1 รายการ');
+            if (!confirm(`ยืนยันการลบสินค้า ${skus.length} รายการ?`)) return;
 
             try {
-                const res = await fetch('/api/products/delete-multiple', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        skus: skus,
-                        current_role: currentUser.role,
-                        current_user: currentUser.username
-                    })
-                });
-                const data = await res.json();
+                const data = await apiCall('/api/products/delete-multiple', { skus, current_role: currentUser.role, current_user: currentUser.username });
                 alert(data.message);
-                
                 if (data.success) {
                     const selectAll = document.getElementById('selectAllCheckbox');
                     if (selectAll) selectAll.checked = false;
-
-                    loadCategories();
-                    loadProducts();
-                    loadSummary();
+                    loadCategories(); loadProducts(); loadSummary();
                 }
-            } catch (err) {
-                alert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
-            }
+            } catch (err) { alert('เกิดข้อผิดพลาดในการเชื่อมต่อ'); }
         }
 
         function renderPagination(pagination) {
             const container = document.getElementById('paginationControls');
-            const info = document.getElementById('paginationInfo');
-            
-            info.innerText = `หน้า ${pagination.current_page} / ${pagination.total_pages} (รวมทั้งหมด ${pagination.total_items} รายการ)`;
-
-            if (pagination.total_pages <= 1) {
-                container.innerHTML = '';
-                return;
-            }
+            document.getElementById('paginationInfo').innerText = `หน้า ${pagination.current_page} / ${pagination.total_pages} (รวม ${pagination.total_items} รายการ)`;
+            if (pagination.total_pages <= 1) return container.innerHTML = '';
 
             let html = `<ul class="pagination pagination-sm mb-0">`;
-            html += `<li class="page-item ${pagination.current_page === 1 ? 'disabled' : ''}">
-                <a class="page-link" href="#" onclick="changePage(${pagination.current_page - 1}); return false;">ย้อนกลับ</a>
-            </li>`;
-
+            html += `<li class="page-item ${pagination.current_page === 1 ? 'disabled' : ''}"><a class="page-link" href="#" onclick="changePage(${pagination.current_page - 1}); return false;">ย้อนกลับ</a></li>`;
             for (let i = 1; i <= pagination.total_pages; i++) {
-                html += `<li class="page-item ${i === pagination.current_page ? 'active' : ''}">
-                    <a class="page-link" href="#" onclick="changePage(${i}); return false;">${i}</a>
-                </li>`;
+                html += `<li class="page-item ${i === pagination.current_page ? 'active' : ''}"><a class="page-link" href="#" onclick="changePage(${i}); return false;">${i}</a></li>`;
             }
-
-            html += `<li class="page-item ${pagination.current_page === pagination.total_pages ? 'disabled' : ''}">
-                <a class="page-link" href="#" onclick="changePage(${pagination.current_page + 1}); return false;">ถัดไป</a>
-            </li>`;
-            html += `</ul>`;
-
+            html += `<li class="page-item ${pagination.current_page === pagination.total_pages ? 'disabled' : ''}"><a class="page-link" href="#" onclick="changePage(${pagination.current_page + 1}); return false;">ถัดไป</a></li></ul>`;
             container.innerHTML = html;
         }
 
-        function changePage(page) {
-            currentPage = page;
-            loadProducts();
-        }
+        function changePage(page) { currentPage = page; loadProducts(); }
 
         function renderDashboardCharts(summaryData) {
             const colorPalette = ['#4f46e5', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
-
             if (categoryChart) categoryChart.destroy();
             if (companyChart) companyChart.destroy();
             if (productChart) productChart.destroy();
 
-            const catLabels = Object.keys(summaryData.category_summary || {});
-            const catValues = Object.values(summaryData.category_summary || {});
             const ctxCat = document.getElementById('categoryPieChart').getContext('2d');
             categoryChart = new Chart(ctxCat, {
                 type: 'pie',
-                data: { labels: catLabels, datasets: [{ data: catValues, backgroundColor: colorPalette }] },
+                data: { labels: Object.keys(summaryData.category_summary || {}), datasets: [{ data: Object.values(summaryData.category_summary || {}), backgroundColor: colorPalette }] },
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
             });
 
-            const compLabels = Object.keys(summaryData.company_summary || {});
-            const compValues = Object.values(summaryData.company_summary || {});
             const ctxComp = document.getElementById('companyPieChart').getContext('2d');
             companyChart = new Chart(ctxComp, {
                 type: 'pie',
-                data: { labels: compLabels, datasets: [{ data: compValues, backgroundColor: colorPalette.slice(2) }] },
+                data: { labels: Object.keys(summaryData.company_summary || {}), datasets: [{ data: Object.values(summaryData.company_summary || {}), backgroundColor: colorPalette.slice(2) }] },
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
             });
 
-            const prodLabels = Object.keys(summaryData.product_summary || {});
-            const prodValues = Object.values(summaryData.product_summary || {});
             const ctxProd = document.getElementById('productPieChart').getContext('2d');
             productChart = new Chart(ctxProd, {
                 type: 'doughnut',
-                data: { labels: prodLabels, datasets: [{ data: prodValues, backgroundColor: colorPalette.slice(1) }] },
+                data: { labels: Object.keys(summaryData.product_summary || {}), datasets: [{ data: Object.values(summaryData.product_summary || {}), backgroundColor: colorPalette.slice(1) }] },
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
             });
         }
@@ -806,38 +778,25 @@
         document.getElementById('productForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const payload = {
-                current_role: currentUser.role,
-                current_user: currentUser.username,
-                sku: document.getElementById('pSku').value,
-                name: document.getElementById('pName').value,
-                company: document.getElementById('pCompany').value,
-                category: document.getElementById('pCategory').value,
-                unit: document.getElementById('pUnit').value,
-                quantity: document.getElementById('pQty').value,
-                min_stock: document.getElementById('pMinStock').value,
-                cost_price: document.getElementById('pCost').value,
+                current_role: currentUser.role, current_user: currentUser.username,
+                sku: document.getElementById('pSku').value, name: document.getElementById('pName').value,
+                company: document.getElementById('pCompany').value, category: document.getElementById('pCategory').value,
+                unit: document.getElementById('pUnit').value, quantity: document.getElementById('pQty').value,
+                min_stock: document.getElementById('pMinStock').value, cost_price: document.getElementById('pCost').value,
                 selling_price: document.getElementById('pPrice').value
             };
 
-            const res = await fetch('/api/products/add', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(payload)
-            });
-            const data = await res.json();
+            const data = await apiCall('/api/products/add', payload);
             alert(data.message);
             if (data.success) {
                 productModal.hide();
                 document.getElementById('productForm').reset();
-                loadCategories();
-                loadProducts();
-                loadSummary();
+                loadCategories(); loadProducts(); loadSummary();
             }
         });
 
         async function openEditProductModal(sku) {
-            const res = await fetch(`/api/products?search=${sku}`);
-            const data = await res.json();
+            const data = await apiCall('/api/products', { search: sku });
             if (data.success && data.products.length > 0) {
                 const p = data.products.find(item => item.sku === sku) || data.products[0];
                 document.getElementById('editSku').value = p.sku;
@@ -856,30 +815,18 @@
         document.getElementById('editProductForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const payload = {
-                current_role: currentUser.role,
-                current_user: currentUser.username,
-                sku: document.getElementById('editSku').value,
-                name: document.getElementById('editName').value,
-                company: document.getElementById('editCompany').value,
-                category: document.getElementById('editCategory').value,
-                unit: document.getElementById('editUnit').value,
-                min_stock: document.getElementById('editMinStock').value,
-                cost_price: document.getElementById('editCost').value,
-                selling_price: document.getElementById('editPrice').value
+                current_role: currentUser.role, current_user: currentUser.username,
+                sku: document.getElementById('editSku').value, name: document.getElementById('editName').value,
+                company: document.getElementById('editCompany').value, category: document.getElementById('editCategory').value,
+                unit: document.getElementById('editUnit').value, min_stock: document.getElementById('editMinStock').value,
+                cost_price: document.getElementById('editCost').value, selling_price: document.getElementById('editPrice').value
             };
 
-            const res = await fetch('/api/products/update', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(payload)
-            });
-            const data = await res.json();
+            const data = await apiCall('/api/products/update', payload);
             alert(data.message);
             if (data.success) {
                 editProductModal.hide();
-                loadCategories();
-                loadProducts();
-                loadSummary();
+                loadCategories(); loadProducts(); loadSummary();
             }
         });
 
@@ -890,19 +837,16 @@
 
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
+            formData.append('client_db', JSON.stringify(getDb()));
 
-            const res = await fetch('/api/import/excel', {
-                method: 'POST',
-                body: formData
-            });
+            const res = await fetch('/api/import/excel', { method: 'POST', body: formData });
             const data = await res.json();
             alert(data.message);
             if (data.success) {
+                if (data.db_data) saveDb(data.db_data);
                 importModal.hide();
                 document.getElementById('importForm').reset();
-                loadCategories();
-                loadProducts();
-                loadSummary();
+                loadCategories(); loadProducts(); loadSummary();
             }
         });
 
@@ -921,44 +865,27 @@
                 action_type: document.getElementById('restockType').value,
                 quantity: parseInt(document.getElementById('restockQty').value),
                 reason: document.getElementById('restockReason').value,
-                current_role: currentUser.role,
-                current_user: currentUser.username
+                current_role: currentUser.role, current_user: currentUser.username
             };
 
-            const res = await fetch('/api/products/restock', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(payload)
-            });
-            const data = await res.json();
+            const data = await apiCall('/api/products/restock', payload);
             alert(data.message);
             if (data.success) {
                 restockModal.hide();
-                loadProducts();
-                loadSummary();
+                loadProducts(); loadSummary();
             }
         });
 
         async function deleteProduct(sku) {
             if (!confirm(`ยืนยันการลบสินค้า SKU ${sku}?`)) return;
-            const res = await fetch('/api/products/delete', {
-                method: 'DELETE',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ sku, current_role: currentUser.role, current_user: currentUser.username })
-            });
-            const data = await res.json();
+            const data = await apiCall('/api/products/delete', { sku, current_role: currentUser.role, current_user: currentUser.username });
             alert(data.message);
-            if (data.success) { 
-                loadCategories();
-                loadProducts(); 
-                loadSummary(); 
-            }
+            if (data.success) { loadCategories(); loadProducts(); loadSummary(); }
         }
 
         async function loadOrders() {
             try {
-                const res = await fetch('/api/orders');
-                const data = await res.json();
+                const data = await apiCall('/api/orders');
                 if (data.success) {
                     const tbody = document.getElementById('orderTableBody');
                     tbody.innerHTML = data.orders.map(o => `
@@ -968,13 +895,9 @@
                             <td>${o.product_name}</td>
                             <td class="text-center">${o.quantity}</td>
                             <td class="text-end fw-bold">฿${o.total_price.toLocaleString()}</td>
+                            <td class="text-center"><span class="badge ${o.status === 'Approved' ? 'bg-success' : 'bg-warning text-dark'}">${o.status}</span></td>
                             <td class="text-center">
-                                <span class="badge ${o.status === 'Approved' ? 'bg-success' : 'bg-warning text-dark'}">${o.status}</span>
-                            </td>
-                            <td class="text-center">
-                                ${(currentUser.role !== 'customer' && o.status === 'Pending') ? `
-                                    <button class="btn btn-sm btn-success me-1" onclick="approveOrder('${o.order_id}')"><i class="fa-solid fa-check me-1"></i>อนุมัติ</button>
-                                ` : '-'}
+                                ${(currentUser.role !== 'customer' && o.status === 'Pending') ? `<button class="btn btn-sm btn-success me-1" onclick="approveOrder('${o.order_id}')"><i class="fa-solid fa-check me-1"></i>อนุมัติ</button>` : '-'}
                             </td>
                         </tr>
                     `).join('');
@@ -982,10 +905,15 @@
             } catch (err) { console.error(err); }
         }
 
+        async function approveOrder(orderId) {
+            const data = await apiCall('/api/orders/approve', { order_id: orderId, current_role: currentUser.role, current_user: currentUser.username });
+            alert(data.message);
+            if (data.success) { loadOrders(); loadProducts(); loadSummary(); }
+        }
+
         async function loadPOs() {
             try {
-                const res = await fetch('/api/po');
-                const data = await res.json();
+                const data = await apiCall('/api/po');
                 if (data.success) {
                     const tbody = document.getElementById('poTableBody');
                     tbody.innerHTML = data.supplier_pos.map(p => `
@@ -995,13 +923,9 @@
                             <td>${p.product_name} (${p.sku})</td>
                             <td class="text-center">${p.quantity}</td>
                             <td class="text-end fw-bold">฿${p.total_cost.toLocaleString()}</td>
+                            <td class="text-center"><span class="badge ${p.status === 'Received' ? 'bg-success' : 'bg-primary'}">${p.status}</span></td>
                             <td class="text-center">
-                                <span class="badge ${p.status === 'Received' ? 'bg-success' : 'bg-primary'}">${p.status}</span>
-                            </td>
-                            <td class="text-center">
-                                ${(currentUser.role !== 'customer' && p.status === 'Ordered') ? `
-                                    <button class="btn btn-sm btn-success" onclick="receivePO('${p.po_id}')"><i class="fa-solid fa-box-archive me-1"></i>รับของเข้าคลัง</button>
-                                ` : '-'}
+                                ${(currentUser.role !== 'customer' && p.status === 'Ordered') ? `<button class="btn btn-sm btn-success" onclick="receivePO('${p.po_id}')"><i class="fa-solid fa-box-archive me-1"></i>รับของเข้าคลัง</button>` : '-'}
                             </td>
                         </tr>
                     `).join('');
@@ -1010,8 +934,7 @@
         }
 
         async function openPoModal() {
-            const res = await fetch('/api/products?per_page=50');
-            const data = await res.json();
+            const data = await apiCall('/api/products', { per_page: 50 });
             if (data.success) {
                 const select = document.getElementById('poSkuSelect');
                 select.innerHTML = data.products.map(p => `<option value="${p.sku}">${p.name} (SKU: ${p.sku} | ซัพพลายเออร์: ${p.company})</option>`).join('');
@@ -1022,48 +945,28 @@
         document.getElementById('poForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const payload = {
-                current_role: currentUser.role,
-                current_user: currentUser.username,
+                current_role: currentUser.role, current_user: currentUser.username,
                 sku: document.getElementById('poSkuSelect').value,
                 supplier: document.getElementById('poSupplier').value,
                 quantity: parseInt(document.getElementById('poQty').value)
             };
 
-            const res = await fetch('/api/po/create', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(payload)
-            });
-            const data = await res.json();
+            const data = await apiCall('/api/po/create', payload);
             alert(data.message);
-            if (data.success) {
-                poModal.hide();
-                loadPOs();
-            }
+            if (data.success) { poModal.hide(); loadPOs(); }
         });
 
         async function receivePO(poId) {
             if (!confirm(`ยืนยันการรับสินค้าตามใบสั่งซื้อ ${poId} เข้าคลัง?`)) return;
-            const res = await fetch('/api/po/receive', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ po_id: poId, current_role: currentUser.role, current_user: currentUser.username })
-            });
-            const data = await res.json();
+            const data = await apiCall('/api/po/receive', { po_id: poId, current_role: currentUser.role, current_user: currentUser.username });
             alert(data.message);
-            if (data.success) {
-                loadPOs();
-                loadCategories();
-                loadProducts();
-                loadSummary();
-            }
+            if (data.success) { loadPOs(); loadCategories(); loadProducts(); loadSummary(); }
         }
 
         async function loadStockCards() {
             try {
                 const skuFilter = document.getElementById('stockCardSearch') ? document.getElementById('stockCardSearch').value : '';
-                const res = await fetch(`/api/stock-cards?sku=${encodeURIComponent(skuFilter)}`);
-                const data = await res.json();
+                const data = await apiCall('/api/stock-cards', { sku: skuFilter });
                 if (data.success) {
                     const tbody = document.getElementById('stockCardTableBody');
                     tbody.innerHTML = data.stock_cards.map(c => `
@@ -1084,8 +987,7 @@
 
         async function loadLogs() {
             try {
-                const res = await fetch('/api/logs');
-                const data = await res.json();
+                const data = await apiCall('/api/logs');
                 if (data.success) {
                     const list = document.getElementById('auditLogList');
                     list.innerHTML = data.audit_logs.map(l => `
@@ -1102,8 +1004,7 @@
         }
 
         async function openOrderModal() {
-            const res = await fetch('/api/products?per_page=50');
-            const data = await res.json();
+            const data = await apiCall('/api/products', { per_page: 50 });
             if (data.success) {
                 const select = document.getElementById('orderSkuSelect');
                 select.innerHTML = data.products.map(p => `<option value="${p.sku}">${p.name} (SKU: ${p.sku} | คงเหลือ: ${p.quantity})</option>`).join('');
@@ -1125,23 +1026,14 @@
             };
 
             try {
-                const res = await fetch('/api/orders/create', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(payload)
-                });
-                const data = await res.json();
+                const data = await apiCall('/api/orders/create', payload);
                 alert(data.message);
                 if (data.success) {
                     orderModal.hide();
                     document.getElementById('orderForm').reset();
-                    loadOrders();
-                    loadProducts();
-                    loadSummary();
+                    loadOrders(); loadProducts(); loadSummary();
                 }
-            } catch (err) {
-                alert('เกิดข้อผิดพลาดในการสร้างคำสั่งซื้อ');
-            }
+            } catch (err) { alert('เกิดข้อผิดพลาดในการสร้างคำสั่งซื้อ'); }
         });
 
         function resetFilters() {
