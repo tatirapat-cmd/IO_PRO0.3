@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, jsonify, Response
+import json
 import inventory_logic as logic
 
 app = Flask(__name__)
@@ -363,7 +364,15 @@ def import_excel():
         if file.filename == '':
             return jsonify({'success': False, 'message': 'ไม่ได้เลือกไฟล์'}), 400
 
-        db_data = get_current_db()
+        client_db_raw = request.form.get('client_db')
+        if client_db_raw:
+            try:
+                db_data = json.loads(client_db_raw)
+            except Exception:
+                db_data = get_current_db()
+        else:
+            db_data = get_current_db()
+
         success, msg, count = logic.import_products_from_excel(file, db_data["products"])
         if success:
             logic.add_audit_log(db_data["audit_logs"], "admin", "admin", "IMPORT_EXCEL", f"นำเข้าสินค้า {count} รายการจากไฟล์ Excel")
