@@ -238,6 +238,31 @@ def create_order():
     except Exception as e:
         return jsonify({'success': False, 'message': f"เกิดข้อผิดพลาดในการสร้างคำสั่งซื้อ: {str(e)}"}), 500
 
+@app.route('/api/orders/create-batch', methods=['POST'])
+def create_batch_order():
+    try:
+        db_data = get_current_db()
+        data = request.get_json() or {}
+        items = data.get('items', [])
+        customer = data.get('customer_name', 'Guest')
+
+        if not items or not isinstance(items, list):
+            return jsonify({'success': False, 'message': 'กรุณาระบุรายการสินค้าที่ต้องการสั่งซื้อ'}), 400
+
+        success, msg, created = logic.create_customer_batch_order(
+            db_data["purchase_orders"], db_data["products"], items=items, cust_name=customer
+        )
+
+        if success:
+            logic.add_audit_log(
+                db_data["audit_logs"], customer, 'customer',
+                'CREATE_BATCH_ORDER', f"สร้างคำสั่งซื้อจากตะกร้า {len(created)} รายการ"
+            )
+            return jsonify({'success': True, 'message': msg, 'orders': created, 'db_data': db_data})
+        return jsonify({'success': False, 'message': msg}), 400
+    except Exception as e:
+        return jsonify({'success': False, 'message': f"เกิดข้อผิดพลาดในการสั่งซื้อ: {str(e)}"}), 500
+
 @app.route('/api/orders/approve', methods=['POST'])
 def approve_order():
     try:
@@ -260,6 +285,33 @@ def approve_order():
 
         if success:
             logic.add_audit_log(db_data["audit_logs"], username, role, 'APPROVE_ORDER', f"อนุมัติคำสั่งซื้อ {order_id}")
+            return jsonify({'success': True, 'message': msg, 'db_data': db_data})
+        return jsonify({'success': False, 'message': msg}), 400
+    except Exception as e:
+        return jsonify({'success': False, 'message': f"เกิดข้อผิดพลาดในการอนุมัติคำสั่งซื้อ: {str(e)}"}), 500
+
+@app.route('/api/orders/approve-multiple', methods=['POST'])
+def approve_multiple_orders_route():
+    try:
+        db_data = get_current_db()
+        data = request.get_json() or {}
+        role = data.get('current_role')
+        username = data.get('current_user')
+        order_ids = data.get('order_ids', [])
+
+        if role not in ['admin', 'staff']:
+            return jsonify({'success': False, 'message': 'คุณไม่มีสิทธิ์อนุมัติคำสั่งซื้อ'}), 403
+
+        if not order_ids or not isinstance(order_ids, list):
+            return jsonify({'success': False, 'message': 'กรุณาระบุรายการออเดอร์ที่ต้องการอนุมัติ'}), 400
+
+        success, msg, count = logic.approve_multiple_orders(
+            db_data["products"], db_data["stock_cards"], db_data["purchase_orders"],
+            order_ids=order_ids, operator=username
+        )
+
+        if success:
+            logic.add_audit_log(db_data["audit_logs"], username, role, 'APPROVE_ORDERS', f"อนุมัติคำสั่งซื้อ {count} รายการ: {', '.join(order_ids)}")
             return jsonify({'success': True, 'message': msg, 'db_data': db_data})
         return jsonify({'success': False, 'message': msg}), 400
     except Exception as e:
