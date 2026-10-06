@@ -15,325 +15,369 @@
         .card-stat:hover { transform: translateY(-3px); }
         .hide-sensitive { display: none !important; }
         .chart-container { position: relative; height: 240px; width: 100%; }
+        /* สไตล์สำหรับหน้าบังคับล็อกอิน */
+        #authModal .nav-pills .nav-link.active { background-color: var(--primary-color); }
     </style>
 </head>
 <body>
 
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow-sm">
-        <div class="container-fluid">
-            <a class="navbar-brand fw-bold" href="#"><i class="fa-solid me-2 fa-boxes-stacked text-warning"></i>Smart Inventory</a>
-            <div class="d-flex align-items-center gap-2">
-                <span class="text-light small" id="userInfoDisplay"><i class="fa-solid fa-user me-1"></i> Guest</span>
-                <button class="btn btn-outline-light btn-sm ms-2" onclick="openLoginModal()"><i class="fa-solid fa-right-to-bracket me-1"></i> เข้าสู่ระบบ</button>
-                <button class="btn btn-warning btn-sm" onclick="openRegisterModal()"><i class="fa-solid fa-user-plus me-1"></i> สมัครสมาชิก</button>
-                <button class="btn btn-outline-danger btn-sm" onclick="logout()"><i class="fa-solid fa-right-from-bracket me-1"></i> ออกจากระบบ</button>
+    <!-- Mandatory Auth Modal (บังคับเข้าสู่ระบบก่อนใช้งาน) -->
+    <div class="modal fade" id="authModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-dark text-white text-center py-3">
+                    <h5 class="modal-title w-100 fw-bold"><i class="fa-solid fa-boxes-stacked text-warning me-2"></i>Smart Inventory</h5>
+                </div>
+                <div class="modal-body p-4">
+                    <!-- Tab Navigation (เข้าสู่ระบบ / สมัครสมาชิก) -->
+                    <ul class="nav nav-pills nav-justified mb-4" id="authTabs" role="tablist">
+                        <li class="nav-item">
+                            <button class="nav-link active fw-bold" id="login-pill" data-bs-toggle="pill" data-bs-target="#loginTabContent"><i class="fa-solid fa-right-to-bracket me-1"></i> เข้าสู่ระบบ</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link fw-bold" id="register-pill" data-bs-toggle="pill" data-bs-target="#registerTabContent"><i class="fa-solid fa-user-plus me-1"></i> สมัครสมาชิก</button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="authTabContent">
+                        <!-- แท็บเข้าสู่ระบบ -->
+                        <div class="tab-pane fade show active" id="loginTabContent">
+                            <form id="mainLoginForm">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">ชื่อผู้ใช้งาน (Username)</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fa-solid fa-user"></i></span>
+                                        <input type="text" id="authLoginUser" class="form-control" required placeholder="เช่น admin, staff, customer">
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">รหัสผ่าน (Password)</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fa-solid fa-key"></i></span>
+                                        <input type="password" id="authLoginPass" class="form-control" required placeholder="••••••••">
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100 fw-bold py-2"><i class="fa-solid fa-sign-in-alt me-1"></i> ยืนยันเข้าสู่ระบบ</button>
+                            </form>
+
+                            <!-- คำแนะนำบัญชีสำหรับทดสอบ -->
+                            <div class="mt-4 p-3 bg-light rounded border">
+                                <div class="fw-bold small text-muted mb-2"><i class="fa-solid fa-circle-info me-1 text-primary"></i> บัญชีทดสอบเข้าใช้งานระบบ:</div>
+                                <div class="row g-1 text-center small">
+                                    <div class="col-4">
+                                        <button class="btn btn-outline-danger btn-sm w-100 p-1" onclick="quickFillLogin('admin', '123')">
+                                            <b>Admin</b><br><span class="opacity-75">admin/123</span>
+                                        </button>
+                                    </div>
+                                    <div class="col-4">
+                                        <button class="btn btn-outline-primary btn-sm w-100 p-1" onclick="quickFillLogin('staff', '123')">
+                                            <b>Staff</b><br><span class="opacity-75">staff/123</span>
+                                        </button>
+                                    </div>
+                                    <div class="col-4">
+                                        <button class="btn btn-outline-success btn-sm w-100 p-1" onclick="quickFillLogin('customer', '123')">
+                                            <b>Customer</b><br><span class="opacity-75">customer/123</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- แท็บสมัครสมาชิก -->
+                        <div class="tab-pane fade" id="registerTabContent">
+                            <form id="mainRegisterForm">
+                                <div class="mb-2">
+                                    <label class="form-label fw-bold">ชื่อ-นามสกุล</label>
+                                    <input type="text" id="authRegName" class="form-control" required placeholder="นาย สมชาย ใจดี">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label fw-bold">ชื่อผู้ใช้งาน (Username)</label>
+                                    <input type="text" id="authRegUser" class="form-control" required placeholder="user123">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label fw-bold">รหัสผ่าน (Password)</label>
+                                    <input type="password" id="authRegPass" class="form-control" required placeholder="อย่างน้อย 3 ตัวอักษร">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">สิทธิ์ผู้ใช้งาน (Role)</label>
+                                    <select id="authRegRole" class="form-select">
+                                        <option value="customer">Customer (ลูกค้าทั่วไป)</option>
+                                        <option value="staff">Staff (เจ้าหน้าที่คลัง)</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-warning w-100 fw-bold py-2"><i class="fa-solid fa-user-check me-1"></i> สมัครสมาชิก</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-    </nav>
+    </div>
 
-    <div class="container py-4">
-        <!-- Dashboard Section -->
-        <div class="admin-staff-only mb-4">
-            <div class="row g-3 mb-4">
-                <div class="col-md-3">
-                    <div class="card card-stat bg-white p-3 border-start border-4 border-primary">
-                        <div class="text-muted small">รายการสินค้าทั้งหมด</div>
-                        <div class="h3 fw-bold mb-0" id="statTotalItems">0</div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card card-stat bg-white p-3 border-start border-4 border-warning">
-                        <div class="text-muted small">สินค้าใกล้หมด / ต่ำกว่าจุดสั่งซื้อ</div>
-                        <div class="h3 fw-bold mb-0 text-warning" id="statLowStock">0</div>
-                    </div>
-                </div>
-                <div class="col-md-3 sensitive-info">
-                    <div class="card card-stat bg-white p-3 border-start border-4 border-info">
-                        <div class="text-muted small">มูลค่าทุนรวม</div>
-                        <div class="h3 fw-bold mb-0 text-info" id="statTotalCost">฿0</div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card card-stat bg-white p-3 border-start border-4 border-success">
-                        <div class="text-muted small">มูลค่าขายรวม</div>
-                        <div class="h3 fw-bold mb-0 text-success" id="statTotalValue">฿0</div>
-                    </div>
+    <!-- Main Content Area (จะซ่อนไว้ก่อนจนกว่าจะล็อกอินสำเร็จ) -->
+    <div id="mainAppContent" class="d-none">
+        <!-- Navbar -->
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow-sm">
+            <div class="container-fluid">
+                <a class="navbar-brand fw-bold" href="#"><i class="fa-solid me-2 fa-boxes-stacked text-warning"></i>Smart Inventory</a>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="text-light small" id="userInfoDisplay"><i class="fa-solid fa-user me-1"></i> Guest</span>
+                    <button class="btn btn-outline-danger btn-sm ms-2" onclick="logout()"><i class="fa-solid fa-right-from-bracket me-1"></i> ออกจากระบบ</button>
                 </div>
             </div>
+        </nav>
 
-            <!-- Charts Section -->
-            <div class="row g-3">
-                <div class="col-md-4">
-                    <div class="card border-0 shadow-sm p-3 h-100">
-                        <h6 class="fw-bold mb-3 text-center"><i class="fa-solid fa-chart-pie me-2 text-primary"></i>สัดส่วนสินค้าตามหมวดหมู่</h6>
-                        <div class="chart-container d-flex justify-content-center align-items-center">
-                            <canvas id="categoryPieChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card border-0 shadow-sm p-3 h-100">
-                        <h6 class="fw-bold mb-3 text-center"><i class="fa-solid fa-building me-2 text-info"></i>สัดส่วนตามบริษัท / ซัพพลายเออร์</h6>
-                        <div class="chart-container d-flex justify-content-center align-items-center">
-                            <canvas id="companyPieChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card border-0 shadow-sm p-3 h-100">
-                        <h6 class="fw-bold mb-3 text-center"><i class="fa-solid fa-boxes-stacked me-2 text-success"></i>สัดส่วนตามรายการสินค้า</h6>
-                        <div class="chart-container d-flex justify-content-center align-items-center">
-                            <canvas id="productPieChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Filter Controls -->
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-body">
-                <div class="row g-2">
+        <div class="container py-4">
+            <!-- Dashboard Section -->
+            <div class="admin-staff-only mb-4">
+                <div class="row g-3 mb-4">
                     <div class="col-md-3">
-                        <input type="text" id="searchInput" class="form-control" placeholder="ค้นหา SKU, ชื่อสินค้า..." oninput="currentPage=1; loadProducts();">
-                    </div>
-                    <div class="col-md-2">
-                        <select id="categoryFilter" class="form-select" onchange="currentPage=1; loadProducts();">
-                            <option value="">ทุกหมวดหมู่</option>
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <select id="sortBy" class="form-select" onchange="currentPage=1; loadProducts();">
-                            <option value="sku">เรียงตาม SKU</option>
-                            <option value="qty_asc">จำนวนสต็อก (น้อย -> มาก)</option>
-                            <option value="qty_desc">จำนวนสต็อก (มาก -> น้อย)</option>
-                            <option value="price_asc">ราคาขาย (ต่ำ -> สูง)</option>
-                            <option value="price_desc">ราคาขาย (สูง -> ต่ำ)</option>
-                        </select>
-                    </div>
-                    <div class="col-md-1">
-                        <select id="perPageSelect" class="form-select" onchange="changePerPage()">
-                            <option value="5">5</option>
-                            <option value="10">10</option>
-                            <option value="20" selected>20</option>
-                            <option value="50">50</option>
-                        </select>
-                    </div>
-                    <div class="col-md-4 d-flex gap-1">
-                        <button class="btn btn-outline-secondary" onclick="resetFilters()" title="รีเซ็ต"><i class="fa-solid fa-rotate"></i></button>
-                        <button class="btn btn-outline-danger admin-staff-only" onclick="clearAllFileData()" title="ลบข้อมูลไฟล์ทั้งหมด"><i class="fa-solid fa-trash-arrow-up me-1"></i> ลบไฟล์ข้อมูล</button>
-                        <button class="btn btn-danger admin-staff-only" onclick="deleteSelectedProducts()" title="ลบสินค้าที่เลือก"><i class="fa-solid fa-trash-can me-1"></i> ลบที่เลือก</button>
-                        <button class="btn btn-info text-white admin-staff-only w-100" onclick="openImportModal()"><i class="fa-solid fa-file-import me-1"></i> Import</button>
-                        <button class="btn btn-success admin-staff-only w-100" onclick="exportExcel()"><i class="fa-solid fa-file-excel me-1"></i> Export</button>
-                        <button class="btn btn-primary admin-staff-only w-100" onclick="openProductModal()"><i class="fa-solid fa-plus me-1"></i> เพิ่ม</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Navigation Tabs -->
-        <ul class="nav nav-tabs mb-3" id="mainTabs">
-            <li class="nav-item">
-                <button class="nav-link active fw-bold" id="inventory-tab" data-bs-toggle="tab" data-bs-target="#inventoryTab"><i class="fa-solid fa-boxes-stacked me-1"></i> รายการสินค้า</button>
-            </li>
-            <li class="nav-item">
-                <button class="nav-link fw-bold" id="orders-tab" data-bs-toggle="tab" data-bs-target="#ordersTab"><i class="fa-solid fa-cart-shopping me-1"></i> คำสั่งซื้อลูกค้า</button>
-            </li>
-            <li class="nav-item admin-staff-only">
-                <button class="nav-link fw-bold" id="po-tab" data-bs-toggle="tab" data-bs-target="#poTab" onclick="loadPOs()"><i class="fa-solid fa-truck-ramp-box me-1"></i> ใบสั่งซื้อ Supplier (PO)</button>
-            </li>
-            <li class="nav-item admin-staff-only">
-                <button class="nav-link fw-bold" id="stockcard-tab" data-bs-toggle="tab" data-bs-target="#stockCardTab" onclick="loadStockCards()"><i class="fa-solid fa-receipt me-1"></i> Stock Card</button>
-            </li>
-            <li class="nav-item admin-staff-only">
-                <button class="nav-link fw-bold" id="logs-tab" data-bs-toggle="tab" data-bs-target="#logsTab" onclick="loadLogs()"><i class="fa-solid fa-clock-rotate-left me-1"></i> Audit Logs</button>
-            </li>
-        </ul>
-
-        <!-- Tab Content -->
-        <div class="tab-content">
-            <!-- Inventory Tab -->
-            <div class="tab-pane fade show active" id="inventoryTab">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th class="text-center" style="width: 40px;">
-                                            <input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll(this)" title="เลือกทั้งหมด">
-                                        </th>
-                                        <th>SKU</th>
-                                        <th>ชื่อสินค้า</th>
-                                        <th>บริษัท / ซัพพลายเออร์</th>
-                                        <th>หมวดหมู่</th>
-                                        <th class="text-center">สต็อก</th>
-                                        <th class="sensitive-info text-end">ต้นทุน</th>
-                                        <th class="text-end">ราคาขาย</th>
-                                        <th class="text-center">การจัดการ</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="productTableBody"></tbody>
-                            </table>
+                        <div class="card card-stat bg-white p-3 border-start border-4 border-primary">
+                            <div class="text-muted small">รายการสินค้าทั้งหมด</div>
+                            <div class="h3 fw-bold mb-0" id="statTotalItems">0</div>
                         </div>
                     </div>
-                    <!-- Pagination Bar -->
-                    <div class="card-footer bg-white d-flex justify-content-between align-items-center py-2">
-                        <span class="small text-muted" id="paginationInfo">แสดงรายการสินค้า</span>
-                        <div id="paginationControls"></div>
+                    <div class="col-md-3">
+                        <div class="card card-stat bg-white p-3 border-start border-4 border-warning">
+                            <div class="text-muted small">สินค้าใกล้หมด / ต่ำกว่าจุดสั่งซื้อ</div>
+                            <div class="h3 fw-bold mb-0 text-warning" id="statLowStock">0</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 sensitive-info">
+                        <div class="card card-stat bg-white p-3 border-start border-4 border-info">
+                            <div class="text-muted small">มูลค่าทุนรวม</div>
+                            <div class="h3 fw-bold mb-0 text-info" id="statTotalCost">฿0</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card card-stat bg-white p-3 border-start border-4 border-success">
+                            <div class="text-muted small">มูลค่าขายรวม</div>
+                            <div class="h3 fw-bold mb-0 text-success" id="statTotalValue">฿0</div>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Orders Tab -->
-            <div class="tab-pane fade" id="ordersTab">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                        <h6 class="mb-0 fw-bold"><i class="fa-solid fa-list-check me-2 text-primary"></i>รายการคำสั่งซื้อของลูกค้า</h6>
-                        <button class="btn btn-success btn-sm" onclick="openOrderModal()"><i class="fa-solid fa-cart-plus me-1"></i> สร้างคำสั่งซื้อใหม่</button>
+                <!-- Charts Section -->
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm p-3 h-100">
+                            <h6 class="fw-bold mb-3 text-center"><i class="fa-solid fa-chart-pie me-2 text-primary"></i>สัดส่วนสินค้าตามหมวดหมู่</h6>
+                            <div class="chart-container d-flex justify-content-center align-items-center">
+                                <canvas id="categoryPieChart"></canvas>
+                            </div>
+                        </div>
                     </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>ID ออเดอร์</th>
-                                        <th>ผู้สั่งซื้อ</th>
-                                        <th>สินค้า</th>
-                                        <th class="text-center">จำนวน</th>
-                                        <th class="text-end">ราคารวม</th>
-                                        <th class="text-center">สถานะ</th>
-                                        <th class="text-center">การดำเนินการ</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="orderTableBody"></tbody>
-                            </table>
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm p-3 h-100">
+                            <h6 class="fw-bold mb-3 text-center"><i class="fa-solid fa-building me-2 text-info"></i>สัดส่วนตามบริษัท / ซัพพลายเออร์</h6>
+                            <div class="chart-container d-flex justify-content-center align-items-center">
+                                <canvas id="companyPieChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm p-3 h-100">
+                            <h6 class="fw-bold mb-3 text-center"><i class="fa-solid fa-boxes-stacked me-2 text-success"></i>สัดส่วนตามรายการสินค้า</h6>
+                            <div class="chart-container d-flex justify-content-center align-items-center">
+                                <canvas id="productPieChart"></canvas>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Supplier PO Tab -->
-            <div class="tab-pane fade" id="poTab">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                        <h6 class="mb-0 fw-bold"><i class="fa-solid fa-truck-loading me-2 text-primary"></i>รายการใบสั่งซื้อสินค้าเข้าคลัง (Supplier PO)</h6>
-                        <button class="btn btn-primary btn-sm" onclick="openPoModal()"><i class="fa-solid fa-file-circle-plus me-1"></i> ออกใบสั่งซื้อ PO ใหม่</button>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>PO ID</th>
-                                        <th>ผู้ขาย (Supplier)</th>
-                                        <th>สินค้า</th>
-                                        <th class="text-center">จำนวน</th>
-                                        <th class="text-end">มูลค่ารวม</th>
-                                        <th class="text-center">สถานะ</th>
-                                        <th class="text-center">การดำเนินการ</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="poTableBody"></tbody>
-                            </table>
+            <!-- Filter Controls -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-md-3">
+                            <input type="text" id="searchInput" class="form-control" placeholder="ค้นหา SKU, ชื่อสินค้า..." oninput="currentPage=1; loadProducts();">
                         </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Stock Cards Tab -->
-            <div class="tab-pane fade" id="stockCardTab">
-                <div class="card border-0 shadow-sm p-3">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h6 class="fw-bold mb-0"><i class="fa-solid fa-receipt me-2 text-primary"></i>ประวัติความเคลื่อนไหวสต๊อก (Stock Card)</h6>
-                        <div class="w-25">
-                            <input type="text" id="stockCardSearch" class="form-control form-control-sm" placeholder="กรองตาม SKU..." oninput="loadStockCards()">
-                        </div>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table table-sm table-striped align-middle">
-                            <thead>
-                                <tr>
-                                    <th>วัน-เวลา</th>
-                                    <th>SKU</th>
-                                    <th>สินค้า</th>
-                                    <th>ประเภท</th>
-                                    <th class="text-center">จำนวนเปลี่ยน</th>
-                                    <th class="text-center">คงเหลือใหม่</th>
-                                    <th>เหตุผล</th>
-                                    <th>ผู้ทำรายการ</th>
-                                </tr>
-                            </thead>
-                            <tbody id="stockCardTableBody"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Audit Logs Tab -->
-            <div class="tab-pane fade" id="logsTab">
-                <div class="card border-0 shadow-sm p-3">
-                    <h6 class="fw-bold mb-3"><i class="fa-solid fa-history me-2 text-info"></i>ประวัติการบันทึกแก้ไขข้อมูล (Audit Logs)</h6>
-                    <ul class="list-group list-group-flush" id="auditLogList"></ul>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modals -->
-    <!-- Login Modal -->
-    <div class="modal fade" id="loginModal" tabindex="-1">
-        <div class="modal-dialog modal-sm">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title"><i class="fa-solid fa-user-lock me-2"></i>เข้าสู่ระบบ</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="loginForm">
-                        <div class="mb-3">
-                            <label class="form-label">Username</label>
-                            <input type="text" id="loginUser" class="form-control" required placeholder="admin / staff / customer">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Password</label>
-                            <input type="password" id="loginPass" class="form-control" required placeholder="123">
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100">เข้าสู่ระบบ</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Register Modal -->
-    <div class="modal fade" id="registerModal" tabindex="-1">
-        <div class="modal-dialog modal-sm">
-            <div class="modal-content">
-                <div class="modal-header bg-warning">
-                    <h5 class="modal-title"><i class="fa-solid fa-user-plus me-2"></i>สมัครสมาชิก</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="registerForm">
-                        <div class="mb-2"><label class="form-label">ชื่อ-นามสกุล</label><input type="text" id="regName" class="form-control" required></div>
-                        <div class="mb-2"><label class="form-label">Username</label><input type="text" id="regUser" class="form-control" required></div>
-                        <div class="mb-2"><label class="form-label">Password</label><input type="password" id="regPass" class="form-control" required></div>
-                        <div class="mb-3">
-                            <label class="form-label">สิทธิ์ผู้ใช้งาน (Role)</label>
-                            <select id="regRole" class="form-select">
-                                <option value="customer">Customer (ลูกค้า)</option>
-                                <option value="staff">Staff (เจ้าหน้าที่คลัง)</option>
-                                <option value="admin">Admin (ผู้ดูแลระบบ)</option>
+                        <div class="col-md-2">
+                            <select id="categoryFilter" class="form-select" onchange="currentPage=1; loadProducts();">
+                                <option value="">ทุกหมวดหมู่</option>
                             </select>
                         </div>
-                        <button type="submit" class="btn btn-warning w-100 fw-bold">ยืนยันลงทะเบียน</button>
-                    </form>
+                        <div class="col-md-2">
+                            <select id="sortBy" class="form-select" onchange="currentPage=1; loadProducts();">
+                                <option value="sku">เรียงตาม SKU</option>
+                                <option value="qty_asc">จำนวนสต็อก (น้อย -> มาก)</option>
+                                <option value="qty_desc">จำนวนสต็อก (มาก -> น้อย)</option>
+                                <option value="price_asc">ราคาขาย (ต่ำ -> สูง)</option>
+                                <option value="price_desc">ราคาขาย (สูง -> ต่ำ)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-1">
+                            <select id="perPageSelect" class="form-select" onchange="changePerPage()">
+                                <option value="5">5</option>
+                                <option value="10">10</option>
+                                <option value="20" selected>20</option>
+                                <option value="50">50</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 d-flex gap-1">
+                            <button class="btn btn-outline-secondary" onclick="resetFilters()" title="รีเซ็ต"><i class="fa-solid fa-rotate"></i></button>
+                            <button class="btn btn-outline-danger admin-staff-only" onclick="clearAllFileData()" title="ลบข้อมูลไฟล์ทั้งหมด"><i class="fa-solid fa-trash-arrow-up me-1"></i> ลบไฟล์ข้อมูล</button>
+                            <button class="btn btn-danger admin-staff-only" onclick="deleteSelectedProducts()" title="ลบสินค้าที่เลือก"><i class="fa-solid fa-trash-can me-1"></i> ลบที่เลือก</button>
+                            <button class="btn btn-info text-white admin-staff-only w-100" onclick="openImportModal()"><i class="fa-solid fa-file-import me-1"></i> Import</button>
+                            <button class="btn btn-success admin-staff-only w-100" onclick="exportExcel()"><i class="fa-solid fa-file-excel me-1"></i> Export</button>
+                            <button class="btn btn-primary admin-staff-only w-100" onclick="openProductModal()"><i class="fa-solid fa-plus me-1"></i> เพิ่ม</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <ul class="nav nav-tabs mb-3" id="mainTabs">
+                <li class="nav-item">
+                    <button class="nav-link active fw-bold" id="inventory-tab" data-bs-toggle="tab" data-bs-target="#inventoryTab"><i class="fa-solid fa-boxes-stacked me-1"></i> รายการสินค้า</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link fw-bold" id="orders-tab" data-bs-toggle="tab" data-bs-target="#ordersTab"><i class="fa-solid fa-cart-shopping me-1"></i> คำสั่งซื้อลูกค้า</button>
+                </li>
+                <li class="nav-item admin-staff-only">
+                    <button class="nav-link fw-bold" id="po-tab" data-bs-toggle="tab" data-bs-target="#poTab" onclick="loadPOs()"><i class="fa-solid fa-truck-ramp-box me-1"></i> ใบสั่งซื้อ Supplier (PO)</button>
+                </li>
+                <li class="nav-item admin-staff-only">
+                    <button class="nav-link fw-bold" id="stockcard-tab" data-bs-toggle="tab" data-bs-target="#stockCardTab" onclick="loadStockCards()"><i class="fa-solid fa-receipt me-1"></i> Stock Card</button>
+                </li>
+                <li class="nav-item admin-staff-only">
+                    <button class="nav-link fw-bold" id="logs-tab" data-bs-toggle="tab" data-bs-target="#logsTab" onclick="loadLogs()"><i class="fa-solid fa-clock-rotate-left me-1"></i> Audit Logs</button>
+                </li>
+            </ul>
+
+            <!-- Tab Content -->
+            <div class="tab-content">
+                <!-- Inventory Tab -->
+                <div class="tab-pane fade show active" id="inventoryTab">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th class="text-center" style="width: 40px;">
+                                                <input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll(this)" title="เลือกทั้งหมด">
+                                            </th>
+                                            <th>SKU</th>
+                                            <th>ชื่อสินค้า</th>
+                                            <th>บริษัท / ซัพพลายเออร์</th>
+                                            <th>หมวดหมู่</th>
+                                            <th class="text-center">สต็อก</th>
+                                            <th class="sensitive-info text-end">ต้นทุน</th>
+                                            <th class="text-end">ราคาขาย</th>
+                                            <th class="text-center">การจัดการ</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="productTableBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <!-- Pagination Bar -->
+                        <div class="card-footer bg-white d-flex justify-content-between align-items-center py-2">
+                            <span class="small text-muted" id="paginationInfo">แสดงรายการสินค้า</span>
+                            <div id="paginationControls"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Orders Tab -->
+                <div class="tab-pane fade" id="ordersTab">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0 fw-bold"><i class="fa-solid fa-list-check me-2 text-primary"></i>รายการคำสั่งซื้อของลูกค้า</h6>
+                            <button class="btn btn-success btn-sm" onclick="openOrderModal()"><i class="fa-solid fa-cart-plus me-1"></i> สร้างคำสั่งซื้อใหม่</button>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>ID ออเดอร์</th>
+                                            <th>ผู้สั่งซื้อ</th>
+                                            <th>สินค้า</th>
+                                            <th class="text-center">จำนวน</th>
+                                            <th class="text-end">ราคารวม</th>
+                                            <th class="text-center">สถานะ</th>
+                                            <th class="text-center">การดำเนินการ</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="orderTableBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Supplier PO Tab -->
+                <div class="tab-pane fade" id="poTab">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0 fw-bold"><i class="fa-solid fa-truck-loading me-2 text-primary"></i>รายการใบสั่งซื้อสินค้าเข้าคลัง (Supplier PO)</h6>
+                            <button class="btn btn-primary btn-sm" onclick="openPoModal()"><i class="fa-solid fa-file-circle-plus me-1"></i> ออกใบสั่งซื้อ PO ใหม่</button>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>PO ID</th>
+                                            <th>ผู้ขาย (Supplier)</th>
+                                            <th>สินค้า</th>
+                                            <th class="text-center">จำนวน</th>
+                                            <th class="text-end">มูลค่ารวม</th>
+                                            <th class="text-center">สถานะ</th>
+                                            <th class="text-center">การดำเนินการ</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="poTableBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stock Cards Tab -->
+                <div class="tab-pane fade" id="stockCardTab">
+                    <div class="card border-0 shadow-sm p-3">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="fw-bold mb-0"><i class="fa-solid fa-receipt me-2 text-primary"></i>ประวัติความเคลื่อนไหวสต๊อก (Stock Card)</h6>
+                            <div class="w-25">
+                                <input type="text" id="stockCardSearch" class="form-control form-control-sm" placeholder="กรองตาม SKU..." oninput="loadStockCards()">
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-striped align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>วัน-เวลา</th>
+                                        <th>SKU</th>
+                                        <th>สินค้า</th>
+                                        <th>ประเภท</th>
+                                        <th class="text-center">จำนวนเปลี่ยน</th>
+                                        <th class="text-center">คงเหลือใหม่</th>
+                                        <th>เหตุผล</th>
+                                        <th>ผู้ทำรายการ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="stockCardTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Audit Logs Tab -->
+                <div class="tab-pane fade" id="logsTab">
+                    <div class="card border-0 shadow-sm p-3">
+                        <h6 class="fw-bold mb-3"><i class="fa-solid fa-history me-2 text-info"></i>ประวัติการบันทึกแก้ไขข้อมูล (Audit Logs)</h6>
+                        <ul class="list-group list-group-flush" id="auditLogList"></ul>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Modals อื่นๆ -->
 
     <!-- Add Product Modal -->
     <div class="modal fade" id="productModal" tabindex="-1">
@@ -397,7 +441,7 @@
 
     <!-- Import Excel Modal -->
     <div class="modal fade" id="importModal" tabindex="-1">
-        <div class="modal-dialog modal-sm">
+        <div class="modal-dialog modal-md">
             <div class="modal-content">
                 <div class="modal-header bg-info text-white">
                     <h5 class="modal-title"><i class="fa-solid fa-file-import me-2"></i>นำเข้าข้อมูล Excel</h5>
@@ -406,10 +450,22 @@
                 <div class="modal-body">
                     <form id="importForm">
                         <div class="mb-3">
-                            <label class="form-label">เลือกไฟล์ (.xlsx, .xls)</label>
-                            <input type="file" id="excelFile" class="form-control" accept=".xlsx, .xls" required>
+                            <label class="form-label fw-bold">เลือกไฟล์ (.xlsx, .xls)</label>
+                            <input type="file" id="excelFile" class="form-control" accept=".xlsx, .xls" required onchange="previewExcelColumns(event)">
                         </div>
-                        <button type="button" class="btn btn-info text-white w-100 fw-bold" onclick="handleFileUpload()">นำเข้าไฟล์เข้าระบบ</button>
+
+                        <!-- พื้นที่แสดงชื่อคอลัมน์ที่อ่านได้จากไฟล์ Excel -->
+                        <div id="columnPreviewArea" class="p-3 bg-light border rounded mb-3" style="display: none;">
+                            <div class="fw-bold text-dark mb-2">
+                                <i class="fa-solid fa-table-columns me-1 text-primary"></i> 
+                                พบคอลัมน์ในไฟล์ Excel (<span id="columnCount">0</span> คอลัมน์):
+                            </div>
+                            <div id="columnList" class="d-flex flex-wrap gap-1"></div>
+                        </div>
+
+                        <button type="button" class="btn btn-info text-white w-100 fw-bold" onclick="handleFileUpload()">
+                            <i class="fa-solid fa-upload me-1"></i> นำเข้าไฟล์เข้าระบบ
+                        </button>
                     </form>
                 </div>
             </div>
@@ -507,13 +563,12 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        let currentUser = { username: "admin", role: "admin", name: "ผู้ดูแลระบบ" };
+        let currentUser = null;
         let currentPage = 1;
         let perPage = 20;
         let categoryChart = null, companyChart = null, productChart = null;
 
-        const loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
-        const registerModal = new bootstrap.Modal(document.getElementById('registerModal'));
+        const authModal = new bootstrap.Modal(document.getElementById('authModal'));
         const productModal = new bootstrap.Modal(document.getElementById('productModal'));
         const editProductModal = new bootstrap.Modal(document.getElementById('editProductModal'));
         const restockModal = new bootstrap.Modal(document.getElementById('restockModal'));
@@ -523,10 +578,30 @@
 
         function getDb() {
             const raw = localStorage.getItem('app_db_state');
+            const defaultUsers = [
+                { username: "admin", password: "123", role: "admin", name: "ผู้ดูแลระบบ" },
+                { username: "staff", password: "123", role: "staff", name: "เจ้าหน้าที่คลัง" },
+                { username: "customer", password: "123", role: "customer", name: "ลูกค้าทั่วไป" }
+            ];
+
             if (raw) {
-                try { return JSON.parse(raw); } catch (e) {}
+                try {
+                    const parsed = JSON.parse(raw);
+                    if (!parsed.users || !Array.isArray(parsed.users) || parsed.users.length === 0) {
+                        parsed.users = defaultUsers;
+                    }
+                    return parsed;
+                } catch (e) {}
             }
-            return { users: [], products: [], stock_cards: [], audit_logs: [], purchase_orders: [], supplier_pos: [] };
+
+            return {
+                users: defaultUsers,
+                products: [],
+                stock_cards: [],
+                audit_logs: [],
+                purchase_orders: [],
+                supplier_pos: []
+            };
         }
 
         function saveDb(db) {
@@ -546,12 +621,83 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            const savedUser = sessionStorage.getItem('logged_user');
+            if (savedUser) {
+                try { currentUser = JSON.parse(savedUser); } catch(e) { currentUser = null; }
+            }
+
+            if (currentUser && currentUser.username) {
+                showMainApp();
+            } else {
+                showAuthScreen();
+            }
+        });
+
+        function showAuthScreen() {
+            document.getElementById('mainAppContent').classList.add('d-none');
+            authModal.show();
+        }
+
+        function showMainApp() {
+            authModal.hide();
+            document.getElementById('mainAppContent').classList.remove('d-none');
             updateRoleUI();
             loadSummary();
             loadCategories();
             loadProducts();
             loadOrders();
+        }
+
+        function quickFillLogin(user, pass) {
+            document.getElementById('authLoginUser').value = user;
+            document.getElementById('authLoginPass').value = pass;
+        }
+
+        // จัดการเข้าสู่ระบบ
+        document.getElementById('mainLoginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('authLoginUser').value;
+            const password = document.getElementById('authLoginPass').value;
+
+            try {
+                const data = await apiCall('/api/login', { username, password });
+                if (data.success) {
+                    currentUser = data.user;
+                    sessionStorage.setItem('logged_user', JSON.stringify(currentUser));
+                    showMainApp();
+                } else {
+                    alert(data.message);
+                }
+            } catch (err) { alert('เกิดข้อผิดพลาดในการเชื่อมต่อ'); }
         });
+
+        // จัดการสมัครสมาชิก
+        document.getElementById('mainRegisterForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const payload = {
+                name: document.getElementById('authRegName').value,
+                username: document.getElementById('authRegUser').value,
+                password: document.getElementById('authRegPass').value,
+                role: document.getElementById('authRegRole').value
+            };
+
+            try {
+                const data = await apiCall('/api/register', payload);
+                alert(data.message);
+                if (data.success) {
+                    document.getElementById('mainRegisterForm').reset();
+                    // สลับไปแท็บล็อกอิน
+                    document.getElementById('login-pill').click();
+                    quickFillLogin(payload.username, payload.password);
+                }
+            } catch (err) { alert('ไม่สามารถสมัครสมาชิกได้'); }
+        });
+
+        function logout() {
+            currentUser = null;
+            sessionStorage.removeItem('logged_user');
+            showAuthScreen();
+        }
 
         function changePerPage() {
             const select = document.getElementById('perPageSelect');
@@ -577,6 +723,7 @@
         }
 
         function updateRoleUI() {
+            if (!currentUser) return;
             document.getElementById('userInfoDisplay').innerHTML = `<i class="fa-solid fa-user me-1"></i> ${currentUser.name} (${currentUser.role})`;
             const sensitiveElements = document.querySelectorAll('.sensitive-info');
             const adminStaffElements = document.querySelectorAll('.admin-staff-only');
@@ -592,16 +739,14 @@
             });
         }
 
-        function openLoginModal() { loginModal.show(); }
-        function openRegisterModal() { registerModal.show(); }
-        function openImportModal() { importModal.show(); }
-
-        function logout() {
-            currentUser = { username: "guest", role: "customer", name: "Guest" };
-            updateRoleUI();
-            loadProducts();
-            loadOrders();
-            alert("ออกจากระบบเรียบร้อยแล้ว");
+        function openImportModal() { 
+            const excelInput = document.getElementById('excelFile');
+            const previewArea = document.getElementById('columnPreviewArea');
+            const columnList = document.getElementById('columnList');
+            if (excelInput) excelInput.value = '';
+            if (previewArea) previewArea.style.display = 'none';
+            if (columnList) columnList.innerHTML = '';
+            importModal.show(); 
         }
 
         async function exportExcel() {
@@ -624,47 +769,8 @@
             } catch (err) { alert('เกิดข้อผิดพลาดในการส่งออกไฟล์ Excel'); }
         }
 
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const username = document.getElementById('loginUser').value;
-            const password = document.getElementById('loginPass').value;
-
-            try {
-                const data = await apiCall('/api/login', { username, password });
-                if (data.success) {
-                    currentUser = data.user;
-                    updateRoleUI();
-                    loginModal.hide();
-                    document.getElementById('loginForm').reset();
-                    loadSummary();
-                    loadCategories();
-                    loadProducts();
-                    loadOrders();
-                } else alert(data.message);
-            } catch (err) { alert('เกิดข้อผิดพลาดในการเชื่อมต่อ'); }
-        });
-
-        document.getElementById('registerForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const payload = {
-                name: document.getElementById('regName').value,
-                username: document.getElementById('regUser').value,
-                password: document.getElementById('regPass').value,
-                role: document.getElementById('regRole').value
-            };
-
-            try {
-                const data = await apiCall('/api/register', payload);
-                alert(data.message);
-                if (data.success) {
-                    registerModal.hide();
-                    document.getElementById('registerForm').reset();
-                }
-            } catch (err) { alert('ไม่สามารถสมัครสมาชิกได้'); }
-        });
-
         async function loadSummary() {
-            if (currentUser.role === 'customer') return;
+            if (!currentUser || currentUser.role === 'customer') return;
             try {
                 const data = await apiCall('/api/summary');
                 if (data.success) {
@@ -831,6 +937,53 @@
                 loadCategories(); loadProducts(); loadSummary();
             }
         });
+
+        function previewExcelColumns(event) {
+            const file = event.target.files[0];
+            const previewArea = document.getElementById('columnPreviewArea');
+            const columnList = document.getElementById('columnList');
+            const columnCount = document.getElementById('columnCount');
+
+            if (!file) {
+                previewArea.style.display = 'none';
+                columnList.innerHTML = '';
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const sheetData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                    if (sheetData && sheetData.length > 0) {
+                        const headers = sheetData[0];
+                        columnCount.textContent = headers.length;
+                        columnList.innerHTML = '';
+
+                        headers.forEach((colName, index) => {
+                            const badge = document.createElement('span');
+                            badge.className = 'badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1';
+                            badge.innerHTML = `<i class="fa-solid fa-hashtag me-1 opacity-50"></i>${colName || `Column ${index + 1}`}`;
+                            columnList.appendChild(badge);
+                        });
+
+                        previewArea.style.display = 'block';
+                    } else {
+                        columnList.innerHTML = '<span class="text-danger small">ไม่พบข้อมูลใน Sheet</span>';
+                        previewArea.style.display = 'block';
+                    }
+                } catch (err) {
+                    console.error(err);
+                    columnList.innerHTML = '<span class="text-danger small">ไม่สามารถอ่านโครงสร้างไฟล์ Excel นี้ได้</span>';
+                    previewArea.style.display = 'block';
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
 
         function handleFileUpload() {
             const fileInput = document.getElementById('excelFile');
