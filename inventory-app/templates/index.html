@@ -122,7 +122,12 @@
                     <div class="col-md-4 d-flex gap-1">
                         <button class="btn btn-outline-secondary" onclick="resetFilters()" title="รีเซ็ต"><i class="fa-solid fa-rotate"></i></button>
                         <button class="btn btn-danger admin-staff-only" onclick="deleteSelectedProducts()" title="ลบสินค้าที่เลือก"><i class="fa-solid fa-trash-can me-1"></i> ลบที่เลือก</button>
-                        <button class="btn btn-info text-white admin-staff-only w-100" onclick="openImportModal()"><i class="fa-solid fa-file-import me-1"></i> Import</button>
+                        <button class="btn btn-outline-danger" onclick="clearAllFileData()" title="ลบข้อมูลไฟล์ทั้งหมด">
+                            <i class="fa-solid fa-trash-arrow-up me-1"></i> ลบไฟล์ข้อมูล
+                        </button>
+                        <button class="btn btn-info text-white" onclick="openImportModal()">
+                            <i class="fa-solid fa-file-import me-1"></i> เพิ่มไฟล์ Excel
+                        </button>
                         <button class="btn btn-success admin-staff-only w-100" onclick="exportExcel()"><i class="fa-solid fa-file-excel me-1"></i> Export</button>
                         <button class="btn btn-primary admin-staff-only w-100" onclick="openProductModal()"><i class="fa-solid fa-plus me-1"></i> เพิ่ม</button>
                     </div>
