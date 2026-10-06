@@ -34,7 +34,7 @@ def load_data(file_path: str = None) -> Dict[str, Any]:
             {"username": "staff", "password": "123", "role": "staff", "name": "เจ้าหน้าที่คลัง"},
             {"username": "customer", "password": "123", "role": "customer", "name": "ลูกค้าทั่วไป"}
         ],
-        "products": [],
+        "products": [],  # กำหนดให้เป็นค่าว่างเพื่อให้เริ่มเพิ่มจากหน้าเว็บหรือ Import Excel ได้เอง
         "stock_cards": [],
         "audit_logs": [],
         "purchase_orders": [],
