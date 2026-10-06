@@ -747,3 +747,93 @@ def import_products_from_excel(file_stream, existing_products: List[Dict[str, An
         return True, f"นำเข้าข้อมูลสินค้าสำเร็จจำนวน {imported_count} รายการ", imported_count
     except Exception as e:
         return False, f"เกิดข้อผิดพลาดในการนำเข้าไฟล์ Excel: {str(e)}", 0
+def create_customer_batch_order(orders: List[Dict[str, Any]], products: List[Dict[str, Any]], items: List[Dict[str, Any]], cust_name: str) -> Tuple[bool, str, List[Dict[str, Any]]]:
+
+    try:
+        if not items:
+            return False, "ไม่มีรายการสินค้าในตะกร้า", []
+
+        errors = []
+        valid_items = []
+
+        # 1. ตรวจสอบข้อมูลและสต็อกสินค้าทุกรายการก่อน
+        for item in items:
+            sku = str(item.get("sku", "")).strip().upper()
+            try:
+                qty = int(item.get("quantity", 1))
+            except (ValueError, TypeError):
+                errors.append(f"รหัส {sku}: จำนวนต้องเป็นตัวเลขจำนวนเต็ม")
+                continue
+
+            if qty <= 0:
+                errors.append(f"รหัส {sku}: จำนวนสั่งซื้อต้องมากกว่า 0")
+                continue
+
+            target_p = next((p for p in products if p.get("sku") == sku), None)
+            if not target_p:
+                errors.append(f"ไม่พบสินค้า SKU '{sku}' ในระบบ")
+                continue
+
+            current_qty = int(target_p.get("quantity", 0))
+            if qty > current_qty:
+                errors.append(f"สินค้า '{target_p.get('name')}' มีไม่พอ (คงเหลือ {current_qty} ชิ้น)")
+                continue
+
+            valid_items.append((target_p, qty))
+
+        if errors:
+            return False, "ไม่สามารถสั่งซื้อได้:\n• " + "\n• ".join(errors), []
+
+        # 2. บันทึกสร้างคำสั่งซื้อลงรายการ
+        created_orders = []
+        batch_id = generate_unique_id(orders, prefix="ORD")
+
+        for target_p, qty in valid_items:
+            unit_price = float(target_p.get("selling_price", 0.0))
+            new_order = {
+                "order_id": generate_unique_id(orders, prefix="ORD"),
+                "batch_id": batch_id,
+                "customer": str(cust_name).strip() or "Guest",
+                "sku": target_p["sku"],
+                "product_name": target_p.get("name", ""),
+                "quantity": qty,
+                "total_price": round(unit_price * qty, 2),
+                "status": "Pending",
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            }
+            orders.insert(0, new_order)
+            created_orders.append(new_order)
+
+        return True, f"สร้างคำสั่งซื้อสำเร็จ {len(created_orders)} รายการ (รหัสกลุ่ม: {batch_id})", created_orders
+    except Exception as e:
+        return False, f"เกิดข้อผิดพลาดในการสร้างคำสั่งซื้อ: {str(e)}", []
+def approve_multiple_orders(products: List[Dict[str, Any]], stock_cards: List[Dict[str, Any]], orders: List[Dict[str, Any]], order_ids: List[str], operator: str) -> Tuple[bool, str, int]:
+    """อนุมัติคำสั่งซื้อหลายรายการพร้อมกัน"""
+    try:
+        approved_count = 0
+        errors = []
+
+        for order_id in order_ids:
+            order = next((o for o in orders if o.get('order_id') == order_id), None)
+            if not order:
+                errors.append(f"{order_id}: ไม่พบออเดอร์")
+                continue
+
+            if order.get("status") != "Pending":
+                continue
+
+            success, msg, _ = approve_customer_order(products, stock_cards, order, operator)
+            if success:
+                approved_count += 1
+            else:
+                errors.append(f"{order_id}: {msg}")
+
+        if approved_count > 0:
+            msg = f"อนุมัติคำสั่งซื้อสำเร็จ {approved_count} รายการ"
+            if errors:
+                msg += f" (มีปัญหา: {', '.join(errors)})"
+            return True, msg, approved_count
+        else:
+            return False, "ไม่สามารถอนุมัติได้: " + "; ".join(errors), 0
+    except Exception as e:
+        return False, f"เกิดข้อผิดพลาดในการอนุมัติหลายรายการ: {str(e)}", 0
