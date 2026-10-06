@@ -45,14 +45,14 @@
                                     <label class="form-label fw-bold">ชื่อผู้ใช้งาน (Username)</label>
                                     <div class="input-group">
                                         <span class="input-group-text"><i class="fa-solid fa-user"></i></span>
-                                        <input type="text" id="authLoginUser" class="form-control" required placeholder="เช่น admin, staff, customer">
+                                        <input type="text" id="authLoginUser" class="form-control" maxlength="10" onkeydown="preventInvalidInput(event)" oninput="sanitizeOnInput(this)" required placeholder="สูงสุด 10 ตัวอักษร">
                                     </div>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label fw-bold">รหัสผ่าน (Password)</label>
                                     <div class="input-group">
                                         <span class="input-group-text"><i class="fa-solid fa-key"></i></span>
-                                        <input type="password" id="authLoginPass" class="form-control" required placeholder="••••••••">
+                                        <input type="password" id="authLoginPass" class="form-control" maxlength="10" onkeydown="preventInvalidInput(event)" oninput="sanitizeOnInput(this)" required placeholder="••••••••">
                                     </div>
                                 </div>
                                 <button type="submit" class="btn btn-primary w-100 fw-bold py-2"><i class="fa-solid fa-sign-in-alt me-1"></i> ยืนยันเข้าสู่ระบบ</button>
@@ -85,15 +85,15 @@
                             <form id="mainRegisterForm">
                                 <div class="mb-2">
                                     <label class="form-label fw-bold">ชื่อ-นามสกุล</label>
-                                    <input type="text" id="authRegName" class="form-control" required placeholder="นาย สมชาย ใจดี">
+                                    <input type="text" id="authRegName" class="form-control" maxlength="10" onkeydown="preventInvalidInput(event)" oninput="sanitizeOnInput(this)" required placeholder="สูงสุด 10 ตัวอักษร">
                                 </div>
                                 <div class="mb-2">
                                     <label class="form-label fw-bold">ชื่อผู้ใช้งาน (Username)</label>
-                                    <input type="text" id="authRegUser" class="form-control" required placeholder="user123">
+                                    <input type="text" id="authRegUser" class="form-control" maxlength="10" onkeydown="preventInvalidInput(event)" oninput="sanitizeOnInput(this)" required placeholder="user123">
                                 </div>
                                 <div class="mb-2">
                                     <label class="form-label fw-bold">รหัสผ่าน (Password)</label>
-                                    <input type="password" id="authRegPass" class="form-control" required placeholder="อย่างน้อย 3 ตัวอักษร">
+                                    <input type="password" id="authRegPass" class="form-control" maxlength="10" onkeydown="preventInvalidInput(event)" oninput="sanitizeOnInput(this)" required placeholder="สูงสุด 10 ตัวอักษร">
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label fw-bold">สิทธิ์ผู้ใช้งาน (Role)</label>
@@ -113,12 +113,10 @@
 
     <!-- Main Content Area -->
     <div id="mainAppContent" class="d-none">
-        <!-- Navbar -->
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow-sm">
             <div class="container-fluid">
                 <a class="navbar-brand fw-bold" href="#"><i class="fa-solid me-2 fa-boxes-stacked text-warning"></i>Smart Inventory</a>
                 <div class="d-flex align-items-center gap-2">
-                    <!-- ปุ่มตะกร้าสินค้าสำหรับ Customer -->
                     <button id="cartNavBtn" class="btn btn-warning btn-sm fw-bold position-relative me-2 d-none" onclick="openCartModal()">
                         <i class="fa-solid fa-cart-shopping me-1"></i> ตะกร้าสินค้า
                         <span id="cartBadgeCount" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">0</span>
@@ -159,7 +157,6 @@
                     </div>
                 </div>
 
-                <!-- Charts Section -->
                 <div class="row g-3">
                     <div class="col-md-4">
                         <div class="card border-0 shadow-sm p-3 h-100">
@@ -193,7 +190,7 @@
                 <div class="card-body">
                     <div class="row g-2">
                         <div class="col-md-3">
-                            <input type="text" id="searchInput" class="form-control" placeholder="ค้นหา SKU, ชื่อสินค้า..." oninput="currentPage=1; loadProducts();">
+                            <input type="text" id="searchInput" class="form-control" maxlength="10" onkeydown="preventInvalidInput(event)" oninput="sanitizeOnInput(this); currentPage=1; loadProducts();" placeholder="ค้นหา SKU, ชื่อ...">
                         </div>
                         <div class="col-md-2">
                             <select id="categoryFilter" class="form-select" onchange="currentPage=1; loadProducts();">
@@ -219,13 +216,11 @@
                         </div>
                         <div class="col-md-4 d-flex gap-1">
                             <button class="btn btn-outline-secondary" onclick="resetFilters()" title="รีเซ็ต"><i class="fa-solid fa-rotate"></i></button>
-                            <!-- ปุ่มสำหรับ Admin/Staff -->
                             <button class="btn btn-outline-danger admin-staff-only" onclick="clearAllFileData()" title="ลบข้อมูลไฟล์ทั้งหมด"><i class="fa-solid fa-trash-arrow-up me-1"></i> ลบไฟล์ข้อมูล</button>
                             <button class="btn btn-danger admin-staff-only" onclick="deleteSelectedProducts()" title="ลบสินค้าที่เลือก"><i class="fa-solid fa-trash-can me-1"></i> ลบที่เลือก</button>
                             <button class="btn btn-info text-white admin-staff-only w-100" onclick="openImportModal()"><i class="fa-solid fa-file-import me-1"></i> Import</button>
                             <button class="btn btn-success admin-staff-only w-100" onclick="exportExcel()"><i class="fa-solid fa-file-excel me-1"></i> Export</button>
                             <button class="btn btn-primary admin-staff-only w-100" onclick="openProductModal()"><i class="fa-solid fa-plus me-1"></i> เพิ่ม</button>
-                            <!-- ปุ่มสำหรับ Customer ใส่ตะกร้าหลายรายการ -->
                             <button class="btn btn-warning customer-only d-none w-100 fw-bold" onclick="addSelectedToCart()"><i class="fa-solid fa-cart-plus me-1"></i> ใส่ตะกร้าที่เลือก</button>
                         </div>
                     </div>
@@ -253,7 +248,6 @@
 
             <!-- Tab Content -->
             <div class="tab-content">
-                <!-- Inventory Tab -->
                 <div class="tab-pane fade show active" id="inventoryTab">
                     <div class="card border-0 shadow-sm">
                         <div class="card-body p-0">
@@ -285,7 +279,6 @@
                     </div>
                 </div>
 
-                <!-- Orders Tab -->
                 <div class="tab-pane fade" id="ordersTab">
                     <div class="card border-0 shadow-sm">
                         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
@@ -321,7 +314,6 @@
                     </div>
                 </div>
 
-                <!-- Supplier PO Tab -->
                 <div class="tab-pane fade" id="poTab">
                     <div class="card border-0 shadow-sm">
                         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
@@ -349,13 +341,12 @@
                     </div>
                 </div>
 
-                <!-- Stock Cards Tab -->
                 <div class="tab-pane fade" id="stockCardTab">
                     <div class="card border-0 shadow-sm p-3">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h6 class="fw-bold mb-0"><i class="fa-solid fa-receipt me-2 text-primary"></i>ประวัติความเคลื่อนไหวสต๊อก (Stock Card)</h6>
                             <div class="w-25">
-                                <input type="text" id="stockCardSearch" class="form-control form-control-sm" placeholder="กรองตาม SKU..." oninput="loadStockCards()">
+                                <input type="text" id="stockCardSearch" class="form-control form-control-sm" maxlength="10" onkeydown="preventInvalidInput(event)" oninput="sanitizeOnInput(this); loadStockCards();" placeholder="กรองตาม SKU...">
                             </div>
                         </div>
                         <div class="table-responsive">
@@ -378,7 +369,6 @@
                     </div>
                 </div>
 
-                <!-- Audit Logs Tab -->
                 <div class="tab-pane fade" id="logsTab">
                     <div class="card border-0 shadow-sm p-3">
                         <h6 class="fw-bold mb-3"><i class="fa-solid fa-history me-2 text-info"></i>ประวัติการบันทึกแก้ไขข้อมูล (Audit Logs)</h6>
@@ -390,8 +380,6 @@
     </div>
 
     <!-- Modals ทั้งหมด -->
-
-    <!-- Cart Modal (ตะกร้าสินค้าสำหรับ Customer) -->
     <div class="modal fade" id="cartModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -435,7 +423,7 @@
         </div>
     </div>
 
-    <!-- Add Product Modal -->
+    <!-- Modal เพิ่มสินค้า -->
     <div class="modal fade" id="productModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -445,19 +433,19 @@
                 </div>
                 <div class="modal-body">
                     <form id="productForm">
-                        <div class="mb-2"><label class="form-label">รหัส SKU</label><input type="text" id="pSku" class="form-control" required placeholder="เช่น SKU-1004"></div>
-                        <div class="mb-2"><label class="form-label">ชื่อสินค้า</label><input type="text" id="pName" class="form-control" required></div>
-                        <div class="mb-2"><label class="form-label">บริษัท / ซัพพลายเออร์</label><input type="text" id="pCompany" class="form-control" required></div>
+                        <div class="mb-2"><label class="form-label">รหัส SKU</label><input type="text" id="pSku" class="form-control" maxlength="10" onkeydown="preventInvalidInput(event)" oninput="sanitizeOnInput(this)" required placeholder="สูงสุด 10 ตัวอักษร"></div>
+                        <div class="mb-2"><label class="form-label">ชื่อสินค้า</label><input type="text" id="pName" class="form-control" maxlength="10" onkeydown="preventInvalidInput(event)" oninput="sanitizeOnInput(this)" required placeholder="สูงสุด 10 ตัวอักษร"></div>
+                        <div class="mb-2"><label class="form-label">บริษัท / ซัพพลายเออร์</label><input type="text" id="pCompany" class="form-control" maxlength="10" onkeydown="preventInvalidInput(event)" oninput="sanitizeOnInput(this)" required placeholder="สูงสุด 10 ตัวอักษร"></div>
                         <div class="row g-2 mb-2">
-                            <div class="col-md-6"><label class="form-label">หมวดหมู่</label><input type="text" id="pCategory" class="form-control" value="Electronics" required></div>
-                            <div class="col-md-6"><label class="form-label">หน่วยนับ</label><input type="text" id="pUnit" class="form-control" value="ชิ้น" required></div>
+                            <div class="col-md-6"><label class="form-label">หมวดหมู่</label><input type="text" id="pCategory" class="form-control" maxlength="10" onkeydown="preventInvalidInput(event)" oninput="sanitizeOnInput(this)" value="ทั่วไป" required></div>
+                            <div class="col-md-6"><label class="form-label">หน่วยนับ</label><input type="text" id="pUnit" class="form-control" maxlength="10" onkeydown="preventInvalidInput(event)" oninput="sanitizeOnInput(this)" value="ชิ้น" required></div>
                         </div>
                         <div class="row g-2 mb-2">
-                            <div class="col-md-4"><label class="form-label">จำนวน</label><input type="number" id="pQty" class="form-control" min="0" value="10" required></div>
-                            <div class="col-md-4"><label class="form-label">จุดสั่งซื้อ (Min)</label><input type="number" id="pMinStock" class="form-control" min="0" value="5" required></div>
-                            <div class="col-md-4"><label class="form-label">ต้นทุน (฿)</label><input type="number" id="pCost" class="form-control" step="0.01" value="100" required></div>
+                            <div class="col-md-4"><label class="form-label">จำนวน</label><input type="number" id="pQty" class="form-control" min="0" max="9999999999" value="10" oninput="if(this.value.length>10) this.value=this.value.slice(0,10)" required></div>
+                            <div class="col-md-4"><label class="form-label">จุดสั่งซื้อ (Min)</label><input type="number" id="pMinStock" class="form-control" min="0" max="9999999999" value="5" oninput="if(this.value.length>10) this.value=this.value.slice(0,10)" required></div>
+                            <div class="col-md-4"><label class="form-label">ต้นทุน (฿)</label><input type="number" id="pCost" class="form-control" step="0.01" max="9999999999" value="100" oninput="if(this.value.length>10) this.value=this.value.slice(0,10)" required></div>
                         </div>
-                        <div class="mb-2"><label class="form-label">ราคาขาย (฿)</label><input type="number" id="pPrice" class="form-control" step="0.01" value="150" required></div>
+                        <div class="mb-2"><label class="form-label">ราคาขาย (฿)</label><input type="number" id="pPrice" class="form-control" step="0.01" max="9999999999" value="150" oninput="if(this.value.length>10) this.value=this.value.slice(0,10)" required></div>
                         <button type="submit" class="btn btn-primary w-100 mt-3">บันทึกสินค้า</button>
                     </form>
                 </div>
@@ -465,7 +453,7 @@
         </div>
     </div>
 
-    <!-- Edit Product Modal -->
+    <!-- Modal แก้ไขสินค้า -->
     <div class="modal fade" id="editProductModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -477,17 +465,17 @@
                     <form id="editProductForm">
                         <input type="hidden" id="editSku">
                         <div class="mb-2"><label class="form-label fw-bold">รหัส SKU</label><input type="text" id="editSkuDisplay" class="form-control" disabled></div>
-                        <div class="mb-2"><label class="form-label">ชื่อสินค้า</label><input type="text" id="editName" class="form-control" required></div>
-                        <div class="mb-2"><label class="form-label">บริษัท / ซัพพลายเออร์</label><input type="text" id="editCompany" class="form-control" required></div>
+                        <div class="mb-2"><label class="form-label">ชื่อสินค้า</label><input type="text" id="editName" class="form-control" maxlength="10" onkeydown="preventInvalidInput(event)" oninput="sanitizeOnInput(this)" required></div>
+                        <div class="mb-2"><label class="form-label">บริษัท / ซัพพลายเออร์</label><input type="text" id="editCompany" class="form-control" maxlength="10" onkeydown="preventInvalidInput(event)" oninput="sanitizeOnInput(this)" required></div>
                         <div class="row g-2 mb-2">
-                            <div class="col-md-6"><label class="form-label">หมวดหมู่</label><input type="text" id="editCategory" class="form-control" required></div>
-                            <div class="col-md-6"><label class="form-label">หน่วยนับ</label><input type="text" id="editUnit" class="form-control" required></div>
+                            <div class="col-md-6"><label class="form-label">หมวดหมู่</label><input type="text" id="editCategory" class="form-control" maxlength="10" onkeydown="preventInvalidInput(event)" oninput="sanitizeOnInput(this)" required></div>
+                            <div class="col-md-6"><label class="form-label">หน่วยนับ</label><input type="text" id="editUnit" class="form-control" maxlength="10" onkeydown="preventInvalidInput(event)" oninput="sanitizeOnInput(this)" required></div>
                         </div>
                         <div class="row g-2 mb-2">
-                            <div class="col-md-6"><label class="form-label">จุดสั่งซื้อ (Min Stock)</label><input type="number" id="editMinStock" class="form-control" min="0" required></div>
-                            <div class="col-md-6"><label class="form-label">ต้นทุน (฿)</label><input type="number" id="editCost" class="form-control" step="0.01" required></div>
+                            <div class="col-md-6"><label class="form-label">จุดสั่งซื้อ (Min Stock)</label><input type="number" id="editMinStock" class="form-control" min="0" oninput="if(this.value.length>10) this.value=this.value.slice(0,10)" required></div>
+                            <div class="col-md-6"><label class="form-label">ต้นทุน (฿)</label><input type="number" id="editCost" class="form-control" step="0.01" oninput="if(this.value.length>10) this.value=this.value.slice(0,10)" required></div>
                         </div>
-                        <div class="mb-2"><label class="form-label">ราคาขาย (฿)</label><input type="number" id="editPrice" class="form-control" step="0.01" required></div>
+                        <div class="mb-2"><label class="form-label">ราคาขาย (฿)</label><input type="number" id="editPrice" class="form-control" step="0.01" oninput="if(this.value.length>10) this.value=this.value.slice(0,10)" required></div>
                         <button type="submit" class="btn btn-primary w-100 mt-3">บันทึกการแก้ไข</button>
                     </form>
                 </div>
@@ -495,7 +483,7 @@
         </div>
     </div>
 
-    <!-- Import Excel Modal -->
+    <!-- Modal นำเข้า Excel -->
     <div class="modal fade" id="importModal" tabindex="-1">
         <div class="modal-dialog modal-md">
             <div class="modal-content">
@@ -527,7 +515,7 @@
         </div>
     </div>
 
-    <!-- Restock Modal -->
+    <!-- Modal ปรับสต๊อก -->
     <div class="modal fade" id="restockModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-sm">
             <div class="modal-content">
@@ -549,11 +537,11 @@
                         </div>
                         <div class="mb-2">
                             <label class="form-label fw-bold">จำนวน</label>
-                            <input type="number" id="restockQty" class="form-control" min="1" value="10" required>
+                            <input type="number" id="restockQty" class="form-control" min="1" value="10" oninput="if(this.value.length>10) this.value=this.value.slice(0,10)" required>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">เหตุผลประกอบ</label>
-                            <input type="text" id="restockReason" class="form-control" placeholder="เช่น เติมสต๊อกประจำสัปดาห์" required>
+                            <input type="text" id="restockReason" class="form-control" maxlength="10" onkeydown="preventInvalidInput(event)" oninput="sanitizeOnInput(this)" placeholder="สูงสุด 10 ตัวอักษร" required>
                         </div>
                         <button type="submit" class="btn btn-success w-100 fw-bold">ยืนยันทำรายการ</button>
                     </form>
@@ -562,7 +550,7 @@
         </div>
     </div>
 
-    <!-- Order Modal (สร้างคำสั่งซื้อเดี่ยว) -->
+    <!-- Modal สร้างออเดอร์ -->
     <div class="modal fade" id="orderModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -578,7 +566,7 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label">จำนวน</label>
-                            <input type="number" id="orderQty" class="form-control" min="1" value="1" required>
+                            <input type="number" id="orderQty" class="form-control" min="1" value="1" oninput="if(this.value.length>10) this.value=this.value.slice(0,10)" required>
                         </div>
                         <button type="submit" class="btn btn-success w-100">ยืนยันคำสั่งซื้อ</button>
                     </form>
@@ -587,7 +575,7 @@
         </div>
     </div>
 
-    <!-- Supplier PO Modal -->
+    <!-- Modal ออก PO -->
     <div class="modal fade" id="poModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -603,11 +591,11 @@
                         </div>
                         <div class="mb-2">
                             <label class="form-label">ชื่อบริษัทผู้ขาย / ซัพพลายเออร์</label>
-                            <input type="text" id="poSupplier" class="form-control" placeholder="เช่น บริษัท ไอทีดิสทริบิวชัน จำกัด" required>
+                            <input type="text" id="poSupplier" class="form-control" maxlength="10" onkeydown="preventInvalidInput(event)" oninput="sanitizeOnInput(this)" placeholder="สูงสุด 10 ตัวอักษร" required>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">จำนวนสั่งซื้อ</label>
-                            <input type="number" id="poQty" class="form-control" min="1" value="20" required>
+                            <input type="number" id="poQty" class="form-control" min="1" value="20" oninput="if(this.value.length>10) this.value=this.value.slice(0,10)" required>
                         </div>
                         <button type="submit" class="btn btn-primary w-100 fw-bold">ออกใบสั่งซื้อ PO</button>
                     </form>
@@ -622,7 +610,7 @@
         let currentPage = 1;
         let perPage = 20;
         let categoryChart = null, companyChart = null, productChart = null;
-        let cart = []; // อาเรย์สำหรับระบบตะกร้าสินค้า
+        let cart = [];
 
         const authModal = new bootstrap.Modal(document.getElementById('authModal'));
         const productModal = new bootstrap.Modal(document.getElementById('productModal'));
@@ -633,22 +621,64 @@
         const importModal = new bootstrap.Modal(document.getElementById('importModal'));
         const cartModal = new bootstrap.Modal(document.getElementById('cartModal'));
 
-        // ดักจับอักขระพิเศษ
-        function validateTextInput(val, fieldLabel, isStrictCode = false) {
+        // ==================== ฟังก์ชันบล็อก Spacebar และสัญลักษณ์พิเศษแบบ Real-time ====================
+        function preventInvalidInput(e) {
+            // บล็อก Spacebar (KeyCode 32 หรือ key === ' ')
+            if (e.key === ' ' || e.keyCode === 32) {
+                e.preventDefault();
+                return false;
+            }
+            
+            // ดักจับสัญลักษณ์พิเศษที่ไม่อนุญาต
+            const invalidSymbols = /[<>"'\\;{}[\]$%^*~+=|]/;
+            if (invalidSymbols.test(e.key)) {
+                e.preventDefault();
+                return false;
+            }
+        }
+
+        function sanitizeOnInput(inputEl) {
+            if (!inputEl) return;
+            // ลบ Spacebar และสัญลักษณ์พิเศษออกทันทีในกรณี Copy-Paste มาวาง
+            inputEl.value = inputEl.value.replace(/[\s<>"'\\;{}[\]$%^*~+=|]/g, '');
+            if (inputEl.value.length > 10) {
+                inputEl.value = inputEl.value.slice(0, 10);
+            }
+        }
+
+        function validateTextInput(inputEl, fieldLabel, isStrictCode = false) {
+            if (!inputEl) return false;
+            const val = inputEl.value;
+
             if (!val || !val.trim()) {
                 alert(`กรุณากรอก ${fieldLabel}`);
+                setTimeout(() => { inputEl.focus(); }, 100);
                 return false;
             }
+
             const cleanVal = val.trim();
+
+            if (cleanVal.length > 10) {
+                alert(`${fieldLabel} ต้องมีความยาวไม่เกิน 10 ตัวอักษร (ปัจจุบันกรอกมา ${cleanVal.length} ตัวอักษร)`);
+                setTimeout(() => {
+                    inputEl.focus();
+                    inputEl.select();
+                }, 100);
+                return false;
+            }
+
             const invalidSymbols = /[<>"'\\;{}[\]$%^*~+=|]/;
             if (invalidSymbols.test(cleanVal)) {
-                alert(`${fieldLabel} มีสัญลักษณ์ที่ไม่ได้รับอนุญาต (ห้ามใช้ < > " ' \\ ; { } [ ] $ % ^ * ~ + = |)`);
+                alert(`${fieldLabel} มีสัญลักษณ์ที่ไม่ได้รับอนุญาต`);
+                setTimeout(() => { inputEl.focus(); }, 100);
                 return false;
             }
+
             if (isStrictCode) {
                 const strictPattern = /^[a-zA-Z0-9_\-]+$/;
                 if (!strictPattern.test(cleanVal)) {
                     alert(`${fieldLabel} ต้องเป็นตัวอักษรภาษาอังกฤษ ตัวเลข ขีดกลาง (-) หรือขีดล่าง (_) เท่านั้น`);
+                    setTimeout(() => { inputEl.focus(); }, 100);
                     return false;
                 }
             }
@@ -735,14 +765,14 @@
         // เข้าสู่ระบบ
         document.getElementById('mainLoginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const username = document.getElementById('authLoginUser').value;
-            const password = document.getElementById('authLoginPass').value;
+            const userEl = document.getElementById('authLoginUser');
+            const passEl = document.getElementById('authLoginPass');
 
-            if (!validateTextInput(username, "ชื่อผู้ใช้งาน")) return;
-            if (!validateTextInput(password, "รหัสผ่าน")) return;
+            if (!validateTextInput(userEl, "ชื่อผู้ใช้งาน")) return;
+            if (!validateTextInput(passEl, "รหัสผ่าน")) return;
 
             try {
-                const data = await apiCall('/api/login', { username, password });
+                const data = await apiCall('/api/login', { username: userEl.value, password: passEl.value });
                 if (data.success) {
                     currentUser = data.user;
                     sessionStorage.setItem('logged_user', JSON.stringify(currentUser));
@@ -756,16 +786,16 @@
         // สมัครสมาชิก
         document.getElementById('mainRegisterForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const name = document.getElementById('authRegName').value;
-            const username = document.getElementById('authRegUser').value;
-            const password = document.getElementById('authRegPass').value;
+            const nameEl = document.getElementById('authRegName');
+            const userEl = document.getElementById('authRegUser');
+            const passEl = document.getElementById('authRegPass');
             const role = document.getElementById('authRegRole').value;
 
-            if (!validateTextInput(name, "ชื่อ-นามสกุล")) return;
-            if (!validateTextInput(username, "ชื่อผู้ใช้งาน", true)) return;
-            if (!validateTextInput(password, "รหัสผ่าน")) return;
+            if (!validateTextInput(nameEl, "ชื่อ-นามสกุล")) return;
+            if (!validateTextInput(userEl, "ชื่อผู้ใช้งาน", true)) return;
+            if (!validateTextInput(passEl, "รหัสผ่าน")) return;
 
-            const payload = { name, username, password, role };
+            const payload = { name: nameEl.value, username: userEl.value, password: passEl.value, role };
 
             try {
                 const data = await apiCall('/api/register', payload);
@@ -1212,25 +1242,26 @@
 
         function openProductModal() { productModal.show(); }
 
+        // บันทึกสินค้าใหม่
         document.getElementById('productForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const sku = document.getElementById('pSku').value;
-            const name = document.getElementById('pName').value;
-            const company = document.getElementById('pCompany').value;
-            const category = document.getElementById('pCategory').value;
-            const unit = document.getElementById('pUnit').value;
+            const skuEl = document.getElementById('pSku');
+            const nameEl = document.getElementById('pName');
+            const companyEl = document.getElementById('pCompany');
+            const categoryEl = document.getElementById('pCategory');
+            const unitEl = document.getElementById('pUnit');
 
-            if (!validateTextInput(sku, "รหัส SKU", true)) return;
-            if (!validateTextInput(name, "ชื่อสินค้า")) return;
-            if (!validateTextInput(company, "บริษัท/ซัพพลายเออร์")) return;
-            if (!validateTextInput(category, "หมวดหมู่")) return;
-            if (!validateTextInput(unit, "หน่วยนับ")) return;
+            if (!validateTextInput(skuEl, "รหัส SKU", true)) return;
+            if (!validateTextInput(nameEl, "ชื่อสินค้า")) return;
+            if (!validateTextInput(companyEl, "บริษัท/ซัพพลายเออร์")) return;
+            if (!validateTextInput(categoryEl, "หมวดหมู่")) return;
+            if (!validateTextInput(unitEl, "หน่วยนับ")) return;
 
             const payload = {
                 current_role: currentUser.role, current_user: currentUser.username,
-                sku, name, company, category, unit,
+                sku: skuEl.value, name: nameEl.value, company: companyEl.value, category: categoryEl.value, unit: unitEl.value,
                 quantity: document.getElementById('pQty').value,
-                min_stock: document.getElementById('pMinStock').value, 
+                min_stock: document.getElementById('pMinStock').value,
                 cost_price: document.getElementById('pCost').value,
                 selling_price: document.getElementById('pPrice').value
             };
@@ -1261,24 +1292,25 @@
             }
         }
 
+        // แก้ไขสินค้า
         document.getElementById('editProductForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const sku = document.getElementById('editSku').value;
-            const name = document.getElementById('editName').value;
-            const company = document.getElementById('editCompany').value;
-            const category = document.getElementById('editCategory').value;
-            const unit = document.getElementById('editUnit').value;
+            const nameEl = document.getElementById('editName');
+            const companyEl = document.getElementById('editCompany');
+            const categoryEl = document.getElementById('editCategory');
+            const unitEl = document.getElementById('editUnit');
 
-            if (!validateTextInput(name, "ชื่อสินค้า")) return;
-            if (!validateTextInput(company, "บริษัท/ซัพพลายเออร์")) return;
-            if (!validateTextInput(category, "หมวดหมู่")) return;
-            if (!validateTextInput(unit, "หน่วยนับ")) return;
+            if (!validateTextInput(nameEl, "ชื่อสินค้า")) return;
+            if (!validateTextInput(companyEl, "บริษัท/ซัพพลายเออร์")) return;
+            if (!validateTextInput(categoryEl, "หมวดหมู่")) return;
+            if (!validateTextInput(unitEl, "หน่วยนับ")) return;
 
             const payload = {
                 current_role: currentUser.role, current_user: currentUser.username,
-                sku, name, company, category, unit,
+                sku: sku, name: nameEl.value, company: companyEl.value, category: categoryEl.value, unit: unitEl.value,
                 min_stock: document.getElementById('editMinStock').value,
-                cost_price: document.getElementById('editCost').value, 
+                cost_price: document.getElementById('editCost').value,
                 selling_price: document.getElementById('editPrice').value
             };
 
@@ -1439,20 +1471,22 @@
             document.getElementById('restockSku').value = sku;
             document.getElementById('restockProductName').innerText = `${name} (${sku})`;
             document.getElementById('restockQty').value = 10;
-            document.getElementById('restockReason').value = "เติมสต๊อกสินค้า";
+            document.getElementById('restockReason').value = "เติมสต๊อก";
             restockModal.show();
         }
 
         document.getElementById('restockForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const reason = document.getElementById('restockReason').value;
-            if (!validateTextInput(reason, "เหตุผลการปรับสต๊อก")) return;
+            const reasonEl = document.getElementById('restockReason');
+            const qty = document.getElementById('restockQty').value;
+
+            if (!validateTextInput(reasonEl, "เหตุผลการปรับสต๊อก")) return;
 
             const payload = {
                 sku: document.getElementById('restockSku').value,
                 action_type: document.getElementById('restockType').value,
-                quantity: parseInt(document.getElementById('restockQty').value),
-                reason: reason,
+                quantity: parseInt(qty),
+                reason: reasonEl.value,
                 current_role: currentUser.role, current_user: currentUser.username
             };
 
@@ -1504,14 +1538,16 @@
 
         document.getElementById('poForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const supplier = document.getElementById('poSupplier').value;
-            if (!validateTextInput(supplier, "ชื่อบริษัทผู้ขาย/ซัพพลายเออร์")) return;
+            const supplierEl = document.getElementById('poSupplier');
+            const qty = document.getElementById('poQty').value;
+
+            if (!validateTextInput(supplierEl, "ชื่อบริษัทผู้ขาย/ซัพพลายเออร์")) return;
 
             const payload = {
                 current_role: currentUser.role, current_user: currentUser.username,
                 sku: document.getElementById('poSkuSelect').value,
-                supplier: supplier,
-                quantity: parseInt(document.getElementById('poQty').value)
+                supplier: supplierEl.value,
+                quantity: parseInt(qty)
             };
 
             const data = await apiCall('/api/po/create', payload);
@@ -1582,9 +1618,11 @@
 
         document.getElementById('orderForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const qty = document.getElementById('orderQty').value;
+
             const payload = {
                 sku: document.getElementById('orderSkuSelect').value,
-                quantity: parseInt(document.getElementById('orderQty').value),
+                quantity: parseInt(qty),
                 customer_name: currentUser.name
             };
 
