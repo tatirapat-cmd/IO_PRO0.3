@@ -323,7 +323,7 @@ def delete_product(products: List[Dict[str, Any]], sku: str) -> Tuple[bool, str]
         return False, f"เกิดข้อผิดพลาดในการลบสินค้า: {str(e)}"
 
 def delete_multiple_products(products: List[Dict[str, Any]], skus: List[str]) -> Tuple[bool, str, int]:
-    """ลบสินค้าหลายรายการพร้อมกันจากรายการ SKU ที่ระบุ"""
+    """11. ลบสินค้าหลายรายการพร้อมกัน"""
     try:
         skus_upper = {str(sku).strip().upper() for sku in skus}
         initial_count = len(products)
@@ -337,7 +337,7 @@ def delete_multiple_products(products: List[Dict[str, Any]], skus: List[str]) ->
         return False, f"เกิดข้อผิดพลาดในการลบสินค้าหลายรายการ: {str(e)}", 0
 
 def create_customer_order(orders: List[Dict[str, Any]], products: List[Dict[str, Any]], sku: str, qty: Any, cust_name: str) -> Tuple[bool, str, Dict[str, Any]]:
-    """11. สร้างคำสั่งซื้อใหม่สำหรับลูกค้า"""
+    """12. สร้างคำสั่งซื้อใหม่สำหรับลูกค้า"""
     try:
         sku = str(sku).strip().upper()
         target_p = next((p for p in products if p.get("sku") == sku), None)
@@ -376,7 +376,7 @@ def create_customer_order(orders: List[Dict[str, Any]], products: List[Dict[str,
         return False, f"เกิดข้อผิดพลาดในการสร้างคำสั่งซื้อ: {str(e)}", {}
 
 def create_supplier_po(supplier_pos: List[Dict[str, Any]], products: List[Dict[str, Any]], supplier: str, sku: str, qty: Any) -> Tuple[bool, str, Dict[str, Any]]:
-    """12. ออกใบสั่งซื้อ Supplier (PO)"""
+    """13. ออกใบสั่งซื้อ Supplier (PO)"""
     try:
         sku = str(sku).strip().upper()
         target_p = next((p for p in products if p.get("sku") == sku), None)
@@ -411,7 +411,7 @@ def create_supplier_po(supplier_pos: List[Dict[str, Any]], products: List[Dict[s
         return False, f"เกิดข้อผิดพลาดในการออกใบสั่งซื้อ PO: {str(e)}", {}
 
 def receive_supplier_po(supplier_pos: List[Dict[str, Any]], products: List[Dict[str, Any]], stock_cards: List[Dict[str, Any]], po_id: str, operator: str) -> Tuple[bool, str]:
-    """13. รับสินค้าเข้าคลังจากใบสั่งซื้อ PO"""
+    """14. รับสินค้าเข้าคลังจากใบสั่งซื้อ PO"""
     try:
         po = next((p for p in supplier_pos if p.get("po_id") == po_id), None)
         if not po:
@@ -436,7 +436,7 @@ def receive_supplier_po(supplier_pos: List[Dict[str, Any]], products: List[Dict[
         return False, f"เกิดข้อผิดพลาดในการรับสินค้า PO: {str(e)}"
 
 def approve_customer_order(products: List[Dict[str, Any]], stock_cards: List[Dict[str, Any]], order: Dict[str, Any], operator: str) -> Tuple[bool, str, Dict[str, Any]]:
-    """14. อนุมัติคำสั่งซื้อและตัดสต็อกสินค้าจริง"""
+    """15. อนุมัติคำสั่งซื้อและตัดสต็อกสินค้าจริง"""
     try:
         if order.get("status") != "Pending":
             return False, f"คำสั่งซื้อนี้อยู่ในสถานะ '{order.get('status')}' ไม่สามารถอนุมัติซ้ำได้", {}
@@ -455,10 +455,10 @@ def approve_customer_order(products: List[Dict[str, Any]], stock_cards: List[Dic
         else:
             return False, msg, {}
     except Exception as e:
-        return False, f"เกิดข้อผิดพลาดในการอนุมัติคำสั่งซื้อ: {str(e)}"
+        return False, f"เกิดข้อผิดพลาดในการอนุมัติคำสั่งซื้อ: {str(e)}", {}
 
 def calculate_inventory_summary(products: List[Dict[str, Any]]) -> Dict[str, Any]:
-    """15. สรุปข้อมูลสต็อกสำหรับ Dashboard"""
+    """16. สรุปข้อมูลสต็อกสำหรับ Dashboard"""
     total_sku = len(products)
     total_quantity = 0
     total_cost_value = 0.0
@@ -502,7 +502,7 @@ def calculate_inventory_summary(products: List[Dict[str, Any]]) -> Dict[str, Any
     }
 
 def filter_and_paginate(items: List[Dict[str, Any]], search_term: str = "", category: str = "", sort_by: str = "sku", page: int = 1, per_page: int = 20) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
-    """16. ค้นหา กรอง เรียงลำดับ และแบ่งหน้า (Pagination) ค่าเริ่มต้น 20 รายการ"""
+    """17. ค้นหา กรอง เรียงลำดับ และแบ่งหน้า (Pagination)"""
     try:
         filtered = []
         search_term = str(search_term).lower().strip()
@@ -554,7 +554,7 @@ def filter_and_paginate(items: List[Dict[str, Any]], search_term: str = "", cate
         return [], {"current_page": 1, "per_page": 20, "total_items": 0, "total_pages": 1}
 
 def add_audit_log(logs: List[Dict[str, Any]], username: str, role: str, action: str, details: str) -> List[Dict[str, Any]]:
-    """17. บันทึก Audit Log"""
+    """18. บันทึก Audit Log"""
     log_entry = {
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "username": str(username),
@@ -566,11 +566,12 @@ def add_audit_log(logs: List[Dict[str, Any]], username: str, role: str, action: 
     return logs
 
 def export_products_to_excel(products: List[Dict[str, Any]]) -> io.BytesIO:
-    """18. ส่งออกข้อมูลสินค้าเป็นไฟล์ Excel"""
+    """19. ส่งออกข้อมูลสินค้าเป็นไฟล์ Excel"""
     df = pd.DataFrame(products)
     cols_order = ["sku", "name", "company", "category", "unit", "cost_price", "selling_price", "quantity", "min_stock", "supplier", "warehouse", "expiry_date"]
     present_cols = [c for c in cols_order if c in df.columns]
-    df = df[present_cols]
+    if present_cols:
+        df = df[present_cols]
 
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine="openpyxl") as writer:
@@ -579,6 +580,7 @@ def export_products_to_excel(products: List[Dict[str, Any]]) -> io.BytesIO:
     return output
 
 def clean_number(val, default=0.0):
+    """20. ทำความสะอาดตัวเลขราคาทุน/ขาย/จำนวนจาก Excel"""
     if pd.isna(val) or val is None or str(val).strip() == '':
         return default
     try:
@@ -588,7 +590,7 @@ def clean_number(val, default=0.0):
         return default
 
 def import_products_from_excel(file_stream, existing_products: List[Dict[str, Any]]) -> Tuple[bool, str, int]:
-    """19. นำเข้าข้อมูลสินค้าจากไฟล์ Excel"""
+    """21. นำเข้าข้อมูลสินค้าจากไฟล์ Excel"""
     try:
         df = pd.read_excel(file_stream)
         clean_cols = [str(c).strip().lower().replace(" ", "_").replace("(", "").replace(")", "").replace("/", "_") for c in df.columns]
@@ -638,7 +640,7 @@ def import_products_from_excel(file_stream, existing_products: List[Dict[str, An
         for index, row in df.iterrows():
             sku_val = row.get(actual_cols['sku'], "")
             sku = str(sku_val).strip().upper() if pd.notna(sku_val) else ""
-            if not sku or sku == "NAN" or sku == "NONE":
+            if not sku or sku in ["NAN", "NONE"]:
                 continue
 
             name_val = row.get(actual_cols['name'], "")
