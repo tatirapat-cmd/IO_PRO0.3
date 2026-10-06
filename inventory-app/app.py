@@ -8,13 +8,14 @@ default_db = logic.load_data()
 
 def get_current_db():
     try:
-        data = request.get_json(silent=True) or {}
-        client_db = data.get('client_db')
-        if client_db and isinstance(client_db, dict):
-            for k in ["users", "products", "stock_cards", "audit_logs", "purchase_orders", "supplier_pos"]:
-                if k not in client_db or not isinstance(client_db[k], list):
-                    client_db[k] = []
-            return client_db
+        if request.is_json:
+            data = request.get_json(silent=True) or {}
+            client_db = data.get('client_db')
+            if client_db and isinstance(client_db, dict):
+                for k in ["users", "products", "stock_cards", "audit_logs", "purchase_orders", "supplier_pos"]:
+                    if k not in client_db or not isinstance(client_db[k], list):
+                        client_db[k] = []
+                return client_db
     except Exception:
         pass
     return default_db
@@ -57,30 +58,30 @@ def login():
     except Exception as e:
         return jsonify({'success': False, 'message': f"เกิดข้อผิดพลาดในการเข้าสู่ระบบ: {str(e)}"}), 500
 
-@app.route('/api/summary', methods=['POST'])
+@app.route('/api/summary', methods=['GET', 'POST'])
 def get_summary():
     try:
         db_data = get_current_db()
         summary = logic.calculate_inventory_summary(db_data["products"])
-        return jsonify({'success': True, 'data': summary})
+        return jsonify({'success': True, 'data': summary, 'db_data': db_data})
     except Exception as e:
         return jsonify({'success': False, 'message': f"เกิดข้อผิดพลาดในการโหลดข้อมูลสรุป: {str(e)}"}), 500
 
-@app.route('/api/products', methods=['POST'])
+@app.route('/api/products', methods=['GET', 'POST'])
 def get_products():
     try:
         db_data = get_current_db()
-        data = request.get_json() or {}
-        search = data.get('search', '')
-        category = data.get('category', '')
-        sort_by = data.get('sort_by', 'sku')
-        page = data.get('page', 1)
-        per_page = data.get('per_page', 20)
+        data = request.get_json(silent=True) or {}
+        search = data.get('search') or request.args.get('search', '')
+        category = data.get('category') or request.args.get('category', '')
+        sort_by = data.get('sort_by') or request.args.get('sort_by', 'sku')
+        page = data.get('page') or request.args.get('page', 1)
+        per_page = data.get('per_page') or request.args.get('per_page', 20)
 
         items, pagination = logic.filter_and_paginate(
             db_data["products"], search_term=search, category=category, sort_by=sort_by, page=page, per_page=per_page
         )
-        return jsonify({'success': True, 'products': items, 'pagination': pagination})
+        return jsonify({'success': True, 'products': items, 'pagination': pagination, 'db_data': db_data})
     except Exception as e:
         return jsonify({'success': False, 'message': f"เกิดข้อผิดพลาดในการเรียกดูรายการสินค้า: {str(e)}"}), 500
 
@@ -166,11 +167,11 @@ def restock_product():
     except Exception as e:
         return jsonify({'success': False, 'message': f"เกิดข้อผิดพลาดในการปรับสต๊อก: {str(e)}"}), 500
 
-@app.route('/api/products/delete', methods=['POST'])
+@app.route('/api/products/delete', methods=['GET', 'POST', 'DELETE'])
 def delete_product():
     try:
         db_data = get_current_db()
-        data = request.get_json() or {}
+        data = request.get_json(silent=True) or {}
         role = data.get('current_role')
         username = data.get('current_user')
         sku = data.get('sku')
@@ -209,11 +210,11 @@ def delete_multiple_products_route():
     except Exception as e:
         return jsonify({'success': False, 'message': f"เกิดข้อผิดพลาดในการลบสินค้า: {str(e)}"}), 500
 
-@app.route('/api/orders', methods=['POST'])
+@app.route('/api/orders', methods=['GET', 'POST'])
 def get_orders():
     try:
         db_data = get_current_db()
-        return jsonify({'success': True, 'orders': db_data["purchase_orders"]})
+        return jsonify({'success': True, 'orders': db_data["purchase_orders"], 'db_data': db_data})
     except Exception as e:
         return jsonify({'success': False, 'message': f"เกิดข้อผิดพลาดในการดึงรายการคำสั่งซื้อ: {str(e)}"}), 500
 
@@ -264,11 +265,11 @@ def approve_order():
     except Exception as e:
         return jsonify({'success': False, 'message': f"เกิดข้อผิดพลาดในการอนุมัติคำสั่งซื้อ: {str(e)}"}), 500
 
-@app.route('/api/po', methods=['POST'])
+@app.route('/api/po', methods=['GET', 'POST'])
 def get_supplier_pos():
     try:
         db_data = get_current_db()
-        return jsonify({'success': True, 'supplier_pos': db_data["supplier_pos"]})
+        return jsonify({'success': True, 'supplier_pos': db_data["supplier_pos"], 'db_data': db_data})
     except Exception as e:
         return jsonify({'success': False, 'message': f"เกิดข้อผิดพลาดในการดึงรายการ PO: {str(e)}"}), 500
 
@@ -320,28 +321,28 @@ def receive_supplier_po_route():
     except Exception as e:
         return jsonify({'success': False, 'message': f"เกิดข้อผิดพลาดในการรับสินค้า PO: {str(e)}"}), 500
 
-@app.route('/api/stock-cards', methods=['POST'])
+@app.route('/api/stock-cards', methods=['GET', 'POST'])
 def get_stock_cards():
     try:
         db_data = get_current_db()
-        data = request.get_json() or {}
-        sku = data.get('sku', '')
+        data = request.get_json(silent=True) or {}
+        sku = data.get('sku') or request.args.get('sku', '')
         cards = db_data["stock_cards"]
         if sku:
             cards = [c for c in cards if sku.upper() in c.get('sku', '').upper()]
-        return jsonify({'success': True, 'stock_cards': cards})
+        return jsonify({'success': True, 'stock_cards': cards, 'db_data': db_data})
     except Exception as e:
         return jsonify({'success': False, 'message': f"เกิดข้อผิดพลาดในการดึงประวัติสต๊อก: {str(e)}"}), 500
 
-@app.route('/api/logs', methods=['POST'])
+@app.route('/api/logs', methods=['GET', 'POST'])
 def get_logs():
     try:
         db_data = get_current_db()
-        return jsonify({'success': True, 'audit_logs': db_data["audit_logs"]})
+        return jsonify({'success': True, 'audit_logs': db_data["audit_logs"], 'db_data': db_data})
     except Exception as e:
         return jsonify({'success': False, 'message': f"เกิดข้อผิดพลาดในการดึง Audit Logs: {str(e)}"}), 500
 
-@app.route('/api/export/excel', methods=['POST'])
+@app.route('/api/export/excel', methods=['GET', 'POST'])
 def export_excel():
     try:
         db_data = get_current_db()
@@ -381,12 +382,12 @@ def import_excel():
     except Exception as e:
         return jsonify({'success': False, 'message': f"เกิดข้อผิดพลาดในการนำเข้าไฟล์: {str(e)}"}), 500
 
-@app.route('/api/categories', methods=['POST'])
+@app.route('/api/categories', methods=['GET', 'POST'])
 def get_categories():
     try:
         db_data = get_current_db()
         categories = sorted(list(set(p.get("category") for p in db_data["products"] if p.get("category"))))
-        return jsonify({'success': True, 'categories': categories})
+        return jsonify({'success': True, 'categories': categories, 'db_data': db_data})
     except Exception as e:
         return jsonify({'success': False, 'message': f"เกิดข้อผิดพลาดในการดึงหมวดหมู่: {str(e)}"}), 500
 
