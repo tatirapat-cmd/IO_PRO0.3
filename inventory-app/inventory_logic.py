@@ -34,7 +34,7 @@ def load_data(file_path: str = None) -> Dict[str, Any]:
             {"username": "staff", "password": "123", "role": "staff", "name": "เจ้าหน้าที่คลัง"},
             {"username": "customer", "password": "123", "role": "customer", "name": "ลูกค้าทั่วไป"}
         ],
-        "products": [],  # กำหนดให้เป็นค่าว่างเพื่อให้เริ่มเพิ่มจากหน้าเว็บหรือ Import Excel ได้เอง
+        "products": [],
         "stock_cards": [],
         "audit_logs": [],
         "purchase_orders": [],
@@ -455,7 +455,7 @@ def approve_customer_order(products: List[Dict[str, Any]], stock_cards: List[Dic
         else:
             return False, msg, {}
     except Exception as e:
-        return False, f"เกิดข้อผิดพลาดในการอนุมัติคำสั่งซื้อ: {str(e)}", {}
+        return False, f"เกิดข้อผิดพลาดในการอนุมัติคำสั่งซื้อ: {str(e)}"
 
 def calculate_inventory_summary(products: List[Dict[str, Any]]) -> Dict[str, Any]:
     """15. สรุปข้อมูลสต็อกสำหรับ Dashboard"""
